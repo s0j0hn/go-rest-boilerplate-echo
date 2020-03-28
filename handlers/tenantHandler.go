@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo"
-	tenantModel "github.com/tkc/go-echo-server-sandbox/db/models/tenant"
+	tenantModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/db/models/tenant"
 )
 
 type (

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/tkc/go-echo-server-sandbox/db"
-	"github.com/tkc/go-echo-server-sandbox/db/models/tenant"
+	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/db"
+	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/db/models/tenant"
 )
 
 func main() {

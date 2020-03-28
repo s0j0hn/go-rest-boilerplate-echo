@@ -2,8 +2,8 @@ package userModel
 
 import (
 	uuid "github.com/satori/go.uuid"
-	databaseManager "github.com/tkc/go-echo-server-sandbox/db"
-	. "github.com/tkc/go-echo-server-sandbox/db/models/base"
+	databaseManager "gitlab.com/s0j0hn/go-rest-boilerplate-echo/db"
+	. "gitlab.com/s0j0hn/go-rest-boilerplate-echo/db/models/base"
 	"time"
 )
 

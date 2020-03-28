@@ -3,7 +3,7 @@ package db
 import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
-	"github.com/tkc/go-echo-server-sandbox/config"
+	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/config"
 )
 
 func GetClient() *gorm.DB {

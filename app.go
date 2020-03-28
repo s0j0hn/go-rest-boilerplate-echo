@@ -1,13 +1,13 @@
 package main
 
 import (
-	userHandler "github.com/tkc/go-echo-server-sandbox/handlers"
+	userHandler "gitlab.com/s0j0hn/go-rest-boilerplate-echo/handlers"
 	"net/http"
 
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"github.com/tkc/go-echo-server-sandbox/config"
-	userModel "github.com/tkc/go-echo-server-sandbox/db/models/tenant"
+	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/config"
+	userModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/db/models/tenant"
 	"golang.org/x/crypto/acme/autocert"
 	"gopkg.in/go-playground/validator.v9"
 )
