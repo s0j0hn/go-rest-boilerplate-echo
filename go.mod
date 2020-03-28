@@ -1,4 +1,4 @@
-module github.com/tkc/go-echo-server-sandbox
+module gitlab.com/s0j0hn/go-rest-boilerplate-echo
 
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect

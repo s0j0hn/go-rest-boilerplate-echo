@@ -5,8 +5,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo"
-	tenantModel "github.com/tkc/go-echo-server-sandbox/models/tenant"
-	"github.com/google/uuid"
+	tenantModel "github.com/tkc/go-echo-server-sandbox/db/models/tenant"
 )
 
 type (
@@ -28,15 +27,15 @@ func CreateHandler(u tenantModel.TenantModel) *handler {
 }
 
 func (h handler) GetOneById(c echo.Context) error {
-	userId, err := uuid.FromString(c.Param("ID"))
+	tenantId, err := uuid.FromString(c.Param("ID"))
 	if err != nil {
 		return c.JSON(http.StatusOK, err.Error())
 	}
 	
-	user := h.tenantModel.GetOne(userId)
+	user := h.tenantModel.GetOne(tenantId)
 	
 	return c.JSON(http.StatusOK, resultJson{
-		id:   userId,
+		id:   tenantId,
 		name: user.Name,
 	})
 }
@@ -66,7 +65,11 @@ func (h handler) Update(c echo.Context) error {
 }
 
 func (h handler) DeleteById(c echo.Context) error {
-	id := uuid.Must(c.Param("ID"))
-	h.tenantModel.Delete(id)
+	tenantId, err := uuid.FromString(c.Param("ID"))
+	if err != nil {
+		return c.JSON(http.StatusOK, err.Error())
+	}
+
+	h.tenantModel.Delete(tenantId)
 	return c.JSON(http.StatusOK, true)
 }

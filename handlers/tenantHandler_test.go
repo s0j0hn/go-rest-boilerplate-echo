@@ -8,7 +8,7 @@ import (
 
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/assert"
-	userModel "github.com/tkc/go-echo-server-sandbox/models/tenant"
+	userModel "github.com/tkc/go-echo-server-sandbox/db/models/tenant"
 )
 
 var (
