@@ -1,0 +1,8 @@
+app: local
+port: :8080
+
+database:
+  name: DBNAME
+  user: DBUSER
+  password: DBUSERPASSWORD
+  
