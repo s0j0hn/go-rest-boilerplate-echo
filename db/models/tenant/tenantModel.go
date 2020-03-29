@@ -1,65 +1,95 @@
-package userModel
+package tenantModel
 
 import (
-	uuid "github.com/satori/go.uuid"
+	"errors"
+	"github.com/jinzhu/gorm"
+	libUuid "github.com/satori/go.uuid"
 	databaseManager "gitlab.com/s0j0hn/go-rest-boilerplate-echo/db"
-	. "gitlab.com/s0j0hn/go-rest-boilerplate-echo/db/models/base"
 	"time"
 )
 
 type TenantModel struct {
-	BaseModel
-	Name      string `gorm:"unique;not null"`
+	ID        libUuid.UUID  `gorm:"primary_key; unique; 
+			    type:uuid; column:id; 
+			    default:uuid_generate_v4()`
+	Name      string       `gorm:"unique;not null"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt *time.Time
+}
+func (TenantModel) TableName() string {
+	return "tenant"
 }
 
-func (u *TenantModel) GetName() string {
-	return u.Name
+func (tenantModel *TenantModel) BeforeCreate(scope *gorm.Scope) error {
+	return scope.SetColumn("ID", libUuid.NewV4().String())
 }
 
-func (u *TenantModel) GetAll(limit int, offset int) []TenantModel {
+func (tenantModel *TenantModel) GetAll(limit int) []TenantModel {
 	var users []TenantModel
-	_databaseManager := databaseManager.GetClient()
-	_databaseManager.Limit(limit).Offset(offset).Order("id desc").Find(&users)
+	databaseManager.Client.Limit(limit).Order("id desc").Find(&users)
 	return users
 }
 
-func (u *TenantModel) Create(name string) TenantModel {
-	var tenant TenantModel
-	_databaseManager := databaseManager.GetClient()
-	tenant = TenantModel{Name: name}
-	_databaseManager.Create(&tenant)
-	return tenant
+func (tenantModel *TenantModel) Save() (*TenantModel, error) {
+	transation := databaseManager.Client.Begin()
+
+	if transation.Error != nil {
+		return &TenantModel{}, transation.Error
+	}
+
+	err := transation.Create(&tenantModel).Error
+	if err != nil {
+		transation.Rollback()
+		return &TenantModel{}, err
+	}
+
+	transation.Commit()
+	return tenantModel, nil
 }
 
-func (u *TenantModel) Update(id uuid.UUID, name string) TenantModel {
-	var tenant TenantModel
-	_databaseManager := databaseManager.GetClient()
-	tenant = TenantModel{}
-	_databaseManager.Model(&tenant).Update(id, name)
-	return tenant
+func (tenantModel *TenantModel) Update() (*TenantModel, error) {
+	transation := databaseManager.Client.Begin()
+
+	if transation.Error != nil {
+		return &TenantModel{}, transation.Error
+	}
+
+	err := transation.Update(tenantModel.ID, tenantModel.Name).Error
+	if err != nil {
+		transation.Rollback()
+		return &TenantModel{}, err
+	}
+
+	transation.Commit()
+	return tenantModel, nil
 }
 
-func (u *TenantModel) GetOne(id uuid.UUID) TenantModel {
-	var tenant TenantModel
-	_databaseManager := databaseManager.GetClient()
-	tenant = TenantModel{}
-	_databaseManager.First(&tenant, id)
-	return tenant
+func (tenantModel *TenantModel) GetOne() (*TenantModel, error) {
+	err := databaseManager.Client.First(&tenantModel).Error
+	if err != nil {
+		return &TenantModel{}, err
+	}
+
+	if gorm.IsRecordNotFoundError(err) {
+		return &TenantModel{}, errors.New("Tenant not found in database")
+	}
+
+	return tenantModel, nil
 }
 
-func (u *TenantModel) MapByName(name string) []TenantModel {
-	var users []TenantModel
-	_databaseManager := databaseManager.GetClient()
-	_databaseManager.Where(map[string]interface{}{"name": name}).Find(&users)
-	return users
-}
+func (tenantModel *TenantModel) Delete() (bool, error) {
+	transation := databaseManager.Client.Begin()
 
-func (u *TenantModel) Delete(id uuid.UUID) {
-	var tenant TenantModel
-	_databaseManager := databaseManager.GetClient()
-	tenant = TenantModel{}
-	_databaseManager.Delete(&tenant, id)
+	if transation.Error != nil {
+		return false, transation.Error
+	}
+
+	err := transation.Delete(&tenantModel).Error
+	if err != nil {
+		transation.Rollback()
+		return false, err
+	}
+
+	transation.Commit()
+	return true, nil
 }
