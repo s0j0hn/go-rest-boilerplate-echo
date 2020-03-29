@@ -24,10 +24,13 @@ func (tenantModel *TenantModel) BeforeCreate(scope *gorm.Scope) error {
 	return scope.SetColumn("Uuid", tenantModel.Uuid)
 }
 
-func (tenantModel *TenantModel) GetAll(limit int) []TenantModel {
-	var tenant []TenantModel
-	databaseManager.DatabaseConnect().Limit(limit).Order("id desc").Find(&tenant)
-	return tenant
+func (tenantModel *TenantModel) GetAll() (*[]TenantModel, error) {
+	var tenants []TenantModel
+	err := databaseManager.DatabaseConnect().Find(&tenants).Error
+	if err != nil {
+		return &[]TenantModel{}, err
+	}
+	return &tenants, nil
 }
 
 func (tenantModel *TenantModel) Save() (*TenantModel, error) {

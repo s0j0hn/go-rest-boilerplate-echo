@@ -2,15 +2,14 @@ package handlers
 
 import (
 	libUuid "github.com/google/uuid"
-	tenantModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/db/models/tenant"
-	"log"
-
 	"github.com/jinzhu/gorm"
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/db"
+	tenantModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/db/models/tenant"
 	"gopkg.in/go-playground/validator.v9"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
