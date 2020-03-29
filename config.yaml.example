@@ -2,6 +2,7 @@ app: local
 port: :8080
 
 database:
+  host: DBHOST
   name: DBNAME
   user: DBUSER
   password: DBUSERPASSWORD

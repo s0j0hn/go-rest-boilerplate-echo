@@ -3,7 +3,6 @@
 Working on echo framework
 - github.com/labstack/echo
 - github.com/jinzhu/gorm
-- github.com/pilu/fresh
 
 
 ## Requirements
@@ -12,8 +11,8 @@ Working on echo framework
 
 ```
 brew install goenv
-goenv install 1.13.x
-goenv global 1.13.x
+goenv install 1.14.x
+goenv global 1.14.x
 goenv rehash
 ```
 
@@ -23,7 +22,7 @@ goenv rehash
 make dep
 ```
 
-## Database (MySQL) Config
+## Database (Postgres) Config
 
 `before start: cp config.yaml.example config.yaml`
 

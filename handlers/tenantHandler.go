@@ -1,7 +1,8 @@
 package handlers
 
 import (
-	uuid "github.com/satori/go.uuid"
+	libUuid "github.com/google/uuid"
+	"log"
 	"net/http"
 
 	"github.com/labstack/echo"
@@ -13,63 +14,100 @@ type (
 		tenantModel tenantModel.TenantModel
 	}
 	resultJson struct {
-		id   uuid.UUID
-		name string
+		ID   libUuid.UUID `json:"id" form:"id" validate:"required"`
+		Name string       `json:"name" form:"name" validate:"required"`
 	}
 	postTenantData struct {
-		ID   uuid.UUID `json:"id" form:"id" validate:"required"`
-		Name string    `json:"name" form:"name" validate:"required"`
+		ID   libUuid.UUID `json:"id" form:"id" validate:"required"`
+		Name string       `json:"name" form:"name" validate:"required"`
 	}
 )
 
-func CreateHandler(u tenantModel.TenantModel) *handler {
-	return &handler{u}
+func CreateHandler(tenant tenantModel.TenantModel) *handler {
+	return &handler{tenant}
 }
 
 func (h handler) GetOneById(c echo.Context) error {
-	tenantId, err := uuid.FromString(c.Param("ID"))
+	tenantId, err := libUuid.Parse(c.Param("id"))
 	if err != nil {
-		return c.JSON(http.StatusOK, err.Error())
+		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
-	
-	user := h.tenantModel.GetOne(tenantId)
-	
-	return c.JSON(http.StatusOK, resultJson{
-		id:   tenantId,
-		name: user.Name,
+
+	h.tenantModel.Uuid = tenantId
+
+	tenant, err := h.tenantModel.GetOne()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, &resultJson{
+		ID:   tenant.Uuid,
+		Name: tenant.Name,
 	})
 }
 
 func (h handler) Create(c echo.Context) error {
 	post := new(postTenantData)
 	if err := c.Bind(post); err != nil {
-		return c.JSON(http.StatusOK, err.Error())
+		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
+
 	if err := c.Validate(post); err != nil {
-		return c.JSON(http.StatusOK, err.Error())
+		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
-	user := h.tenantModel.Create(post.Name)
-	return c.JSON(http.StatusOK, user.ID)
+
+	h.tenantModel.Uuid = post.ID
+	h.tenantModel.Name = post.Name
+
+	log.Print(h.tenantModel)
+
+	tenant, err := h.tenantModel.Save()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, resultJson{
+		ID:   tenant.Uuid,
+		Name: tenant.Name,
+	})
 }
 
 func (h handler) Update(c echo.Context) error {
 	post := new(postTenantData)
+
 	if err := c.Bind(post); err != nil {
 		return c.JSON(http.StatusOK, err.Error())
 	}
+
 	if err := c.Validate(post); err != nil {
 		return c.JSON(http.StatusOK, err.Error())
 	}
-	user := h.tenantModel.Create(post.Name)
-	return c.JSON(http.StatusOK, user.ID)
-}
 
-func (h handler) DeleteById(c echo.Context) error {
-	tenantId, err := uuid.FromString(c.Param("ID"))
+	h.tenantModel.Uuid = post.ID
+	h.tenantModel.Name = post.Name
+
+	tenant, err := h.tenantModel.Update()
 	if err != nil {
 		return c.JSON(http.StatusOK, err.Error())
 	}
 
-	h.tenantModel.Delete(tenantId)
-	return c.JSON(http.StatusOK, true)
+	return c.JSON(http.StatusOK, resultJson{
+		ID:   tenant.Uuid,
+		Name: tenant.Name,
+	})
+}
+
+func (h handler) DeleteById(c echo.Context) error {
+	tenantId, err := libUuid.Parse(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusOK, err.Error())
+	}
+
+	h.tenantModel.Uuid = tenantId
+
+	isDeleted, err := h.tenantModel.Delete()
+	if err != nil {
+		return c.JSON(http.StatusOK, err.Error())
+	}
+	return c.JSON(http.StatusOK, isDeleted)
 }

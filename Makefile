@@ -2,7 +2,7 @@
 
 export GO111MODULE=on
 
-all:build test build
+all:test build
 	@echo DONE!
 
 dep:
@@ -11,7 +11,11 @@ dep:
 
 build:
 	@echo GENERATING CODE...
-	@go build app.go
+	@go build -o dist/server
+
+db:
+	@echo GENERATING CODE...
+	@docker stack deploy --compose-file docker-compose.yml postgres
 
 test:
 	@echo TESTING...
@@ -19,4 +23,4 @@ test:
 
 serve: build
 	@echo SERVING...
-	@./app
+	@./dist/server

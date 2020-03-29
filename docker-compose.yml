@@ -19,7 +19,7 @@ services:
 
 networks:
   postgres:
-    driver: bridge
+    driver: overlay
 
 volumes:
   postgres:

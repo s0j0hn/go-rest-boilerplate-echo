@@ -1,15 +1,14 @@
 package main
 
 import (
-	userHandler "gitlab.com/s0j0hn/go-rest-boilerplate-echo/handlers"
-	"net/http"
-
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/config"
-	userModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/db/models/tenant"
+	tenantModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/db/models/tenant"
+	tenantHandler "gitlab.com/s0j0hn/go-rest-boilerplate-echo/handlers"
 	"golang.org/x/crypto/acme/autocert"
 	"gopkg.in/go-playground/validator.v9"
+	"net/http"
 )
 
 type (
@@ -37,20 +36,21 @@ func status(c echo.Context) error {
 func main() {
 
 	echoServer := echo.New()
-	userModelInstance := userModel.TenantModel{}
-	userHandlerInstance := userHandler.CreateHandler(userModelInstance)
+	tenantInstance := tenantModel.TenantModel{}
+	tenantHandlerInstance := tenantHandler.CreateHandler(tenantInstance)
 
 	echoServer.Validator = &CustomValidator{validator: validator.New()}
 
 	echoServer.Use(middleware.Recover())
 	echoServer.Use(middleware.Logger())
+	echoServer.Use(middleware.Secure())
 
 	echoServer.GET("/", status)
 
-	echoServer.GET("/tenant/:id", userHandlerInstance.GetOneById)
-	echoServer.POST("/tenant", userHandlerInstance.Create)
-	echoServer.PUT("/tenant", userHandlerInstance.Update)
-	echoServer.DELETE("/tenant", userHandlerInstance.DeleteById)
+	echoServer.GET("/tenants/:id", tenantHandlerInstance.GetOneById)
+	echoServer.POST("/tenants", tenantHandlerInstance.Create)
+	echoServer.PUT("/tenants", tenantHandlerInstance.Update)
+	echoServer.DELETE("/tenants/:id", tenantHandlerInstance.DeleteById)
 
 	if config.IsProd() {
 		echoServer.AutoTLSManager.Cache = autocert.DirCache("./.cache")

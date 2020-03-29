@@ -1,23 +1,33 @@
 package db
 
 import (
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/config"
+	"log"
+	"sync"
 )
 
-func GetClient() *gorm.DB {
+var once sync.Once
 
-	connection := config.GetDataBaseAccess()
-	databaseClient, err := gorm.Open(
-		"postgres",
-		connection,
-	)
-	if err != nil {
-		panic("failed to connect database")
-	}
+var Client *gorm.DB
 
-	databaseClient.DB().SetMaxIdleConns(10)
-	databaseClient.DB().SetMaxOpenConns(20)
-	return databaseClient
+func DatabaseConnect() *gorm.DB {
+	once.Do(func() {
+		connection := config.GetDataBaseAccess()
+		client, err := gorm.Open(
+			"postgres",
+			connection,
+		)
+
+		if err != nil {
+			log.Fatal("Error GORM connect:", err)
+		}
+
+		client.DB().SetMaxIdleConns(10)
+		client.DB().SetMaxOpenConns(20)
+		Client = client
+	})
+
+	return Client
 }
