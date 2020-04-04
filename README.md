@@ -44,8 +44,8 @@ database:
 $ go run ./migrate/migrate.go
 ```
 
-## Serve and Hot Reload
+## Launch the server
 
 ``` sh
-$ fresh
+$ amke serve
 ```
