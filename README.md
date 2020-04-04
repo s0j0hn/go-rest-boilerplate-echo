@@ -47,5 +47,5 @@ $ go run ./migrate/migrate.go
 ## Launch the server
 
 ``` sh
-$ amke serve
+$ make serve
 ```
