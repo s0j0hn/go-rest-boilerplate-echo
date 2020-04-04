@@ -13,7 +13,7 @@ build:
 	@echo GENERATING CODE...
 	@go build -o dist/server
 
-db:
+database:
 	@echo GENERATING CODE...
 	@docker stack deploy --compose-file docker-compose.yml postgres
 

@@ -5,7 +5,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	libUuid "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/db"
+	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/database"
 	"log"
 	"os"
 	"testing"
@@ -14,7 +14,7 @@ import (
 var DbClient *gorm.DB
 
 func TestMain(m *testing.M) {
-	DbClient = db.DatabaseConnect()
+	DbClient = database.Connect()
 
 	os.Exit(m.Run())
 }
@@ -85,8 +85,13 @@ func TestGetAllTenants(t *testing.T) {
 
 	tenantInstance := TenantModel{}
 
-	tenants := tenantInstance.GetAll(2)
-	assert.Equal(t, len(tenants), 2)
+	tenants, err := tenantInstance.GetAll()
+	if err != nil {
+		t.Errorf("Error getting all tenants: %v\n", err)
+		return
+	}
+
+	assert.Equal(t, len(*tenants), 2)
 	log.Printf("End TestgetAllTenants")
 }
 

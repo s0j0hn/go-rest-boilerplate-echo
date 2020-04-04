@@ -6,8 +6,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/stretchr/testify/assert"
-	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/db"
-	tenantModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/db/models/tenant"
+	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/database"
+	tenantModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/database/models/tenant"
 	"gopkg.in/go-playground/validator.v9"
 	"log"
 	"net/http"
@@ -35,7 +35,7 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 var DbClient *gorm.DB
 
 func TestMain(m *testing.M) {
-	DbClient = db.DatabaseConnect()
+	DbClient = database.Connect()
 	err := refreshTenantTable()
 	if err != nil {
 		log.Fatal(err)

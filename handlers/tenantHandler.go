@@ -3,7 +3,7 @@ package handlers
 import (
 	libUuid "github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	tenantModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/db/models/tenant"
+	tenantModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/database/models/tenant"
 	"log"
 	"net/http"
 )
@@ -26,25 +26,17 @@ func CreateHandler(tenant tenantModel.TenantModel) *handler {
 	return &handler{tenant}
 }
 
-
-// ListAccounts godoc
-// @Summary List accounts
-// @Description get accounts
-// @Accept  json
-// @Produce  json
-// @Param q query string false "name search by q"
-// @Success 200 {array} model.Account
-// @Header 200 {string} Token "qwerty"
-// @Failure 400 {object} httputil.HTTPError
-// @Failure 404 {object} httputil.HTTPError
-// @Failure 500 {object} httputil.HTTPError
-// @Router /accounts [get]
 func (h handler) GetAll(c echo.Context) error {
 	tenants, err := h.tenantModel.GetAll()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
-	return c.JSON(http.StatusOK, tenants)
+
+	var results = []resultJson{}
+	for _, tenant := range *tenants {
+		results = append(results, resultJson{ ID: tenant.Uuid , Name: tenant.Name })
+	}
+	return c.JSON(http.StatusOK, results)
 }
 
 func (h handler) GetOneById(c echo.Context) error {

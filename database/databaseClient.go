@@ -1,4 +1,4 @@
-package db
+package database
 
 import (
 	"github.com/jinzhu/gorm"
@@ -12,7 +12,7 @@ var once sync.Once
 
 var Client *gorm.DB
 
-func DatabaseConnect() *gorm.DB {
+func Connect() *gorm.DB {
 	once.Do(func() {
 		connection := config.GetDataBaseAccess()
 		client, err := gorm.Open(
