@@ -1,8 +1,8 @@
 # Go REST API Boilerplate
 
-Working on echo framework
-- github.com/labstack/echo
+- github.com/labstack/echo 
 - github.com/jinzhu/gorm
+- github.com/casbin/casbin/v2
 
 
 ## Requirements
@@ -16,7 +16,7 @@ goenv global 1.14.x
 goenv rehash
 ```
 
-## Install proejct go modules
+## Install project go modules
 
 ```sh
 make dep
@@ -47,5 +47,6 @@ $ go run ./migrate/migrate.go
 ## Launch the server
 
 ``` sh
+$ make postgres  // Setup local database with docker compose
 $ make serve
 ```

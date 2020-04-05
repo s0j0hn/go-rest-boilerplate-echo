@@ -2,13 +2,13 @@ module gitlab.com/s0j0hn/go-rest-boilerplate-echo
 
 require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
+	github.com/casbin/casbin/v2 v2.2.2
+	github.com/casbin/gorm-adapter/v2 v2.0.3
 	github.com/denisenkom/go-mssqldb v0.0.0-20200206145737-bbfc9a55622e // indirect
-	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
 	github.com/go-playground/universal-translator v0.17.0 // indirect
-	github.com/go-sql-driver/mysql v1.5.0 // indirect
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/google/uuid v1.1.1
-	github.com/jinzhu/gorm v1.9.1
-	github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a // indirect
+	github.com/jinzhu/gorm v1.9.10
 	github.com/jinzhu/now v1.1.1 // indirect
 	github.com/labstack/echo/v4 v4.1.16
 	github.com/leodido/go-urn v1.2.0 // indirect

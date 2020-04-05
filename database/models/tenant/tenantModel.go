@@ -51,19 +51,19 @@ func (tenantModel *TenantModel) Save() (*TenantModel, error) {
 }
 
 func (tenantModel *TenantModel) Update() (*TenantModel, error) {
-	transation := databaseManager.Connect().Begin()
+	transaction := databaseManager.Connect().Begin()
 
-	if transation.Error != nil {
-		return &TenantModel{}, transation.Error
+	if transaction.Error != nil {
+		return &TenantModel{}, transaction.Error
 	}
 
-	err := transation.Update(tenantModel.Uuid, tenantModel.Name).Error
+	err := transaction.Update(tenantModel.Uuid, tenantModel.Name).Error
 	if err != nil {
-		transation.Rollback()
+		transaction.Rollback()
 		return &TenantModel{}, err
 	}
 
-	transation.Commit()
+	transaction.Commit()
 	return tenantModel, nil
 }
 
@@ -74,25 +74,25 @@ func (tenantModel *TenantModel) GetOne() (*TenantModel, error) {
 	}
 
 	if gorm.IsRecordNotFoundError(err) {
-		return &TenantModel{}, errors.New("Tenant not found in database")
+		return &TenantModel{}, errors.New("tenant not found in database")
 	}
 
 	return tenantModel, nil
 }
 
 func (tenantModel *TenantModel) Delete() (bool, error) {
-	transation := databaseManager.Connect().Begin()
+	transaction := databaseManager.Connect().Begin()
 
-	if transation.Error != nil {
-		return false, transation.Error
+	if transaction.Error != nil {
+		return false, transaction.Error
 	}
 
-	err := transation.Unscoped().Delete(&tenantModel).Error
+	err := transaction.Unscoped().Delete(&tenantModel).Error
 	if err != nil {
-		transation.Rollback()
+		transaction.Rollback()
 		return false, err
 	}
 
-	transation.Commit()
+	transaction.Commit()
 	return true, nil
 }

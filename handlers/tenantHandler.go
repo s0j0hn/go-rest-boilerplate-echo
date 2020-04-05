@@ -4,7 +4,6 @@ import (
 	libUuid "github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	tenantModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/database/models/tenant"
-	"log"
 	"net/http"
 )
 
@@ -32,7 +31,7 @@ func (h handler) GetAll(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
-	var results = []resultJson{}
+	var results []resultJson
 	for _, tenant := range *tenants {
 		results = append(results, resultJson{ ID: tenant.Uuid , Name: tenant.Name })
 	}
@@ -70,8 +69,6 @@ func (h handler) Create(c echo.Context) error {
 
 	h.tenantModel.Uuid = post.ID
 	h.tenantModel.Name = post.Name
-
-	log.Print(h.tenantModel)
 
 	tenant, err := h.tenantModel.Save()
 	if err != nil {
