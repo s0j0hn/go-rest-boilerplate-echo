@@ -28,6 +28,7 @@ func CreateHandler(tenant tenantModel.TenantModel) *handler {
 func (h handler) GetAll(c echo.Context) error {
 	tenants, err := h.tenantModel.GetAll()
 	if err != nil {
+		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
@@ -41,6 +42,7 @@ func (h handler) GetAll(c echo.Context) error {
 func (h handler) GetOneById(c echo.Context) error {
 	tenantId, err := libUuid.Parse(c.Param("id"))
 	if err != nil {
+		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
@@ -48,6 +50,7 @@ func (h handler) GetOneById(c echo.Context) error {
 
 	tenant, err := h.tenantModel.GetOne()
 	if err != nil {
+		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
@@ -60,10 +63,12 @@ func (h handler) GetOneById(c echo.Context) error {
 func (h handler) Create(c echo.Context) error {
 	post := new(postTenantData)
 	if err := c.Bind(post); err != nil {
+		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
 	if err := c.Validate(post); err != nil {
+		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
@@ -72,6 +77,7 @@ func (h handler) Create(c echo.Context) error {
 
 	tenant, err := h.tenantModel.Save()
 	if err != nil {
+		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
@@ -85,10 +91,12 @@ func (h handler) Update(c echo.Context) error {
 	post := new(postTenantData)
 
 	if err := c.Bind(post); err != nil {
+		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusOK, err.Error())
 	}
 
 	if err := c.Validate(post); err != nil {
+		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusOK, err.Error())
 	}
 
@@ -97,6 +105,7 @@ func (h handler) Update(c echo.Context) error {
 
 	tenant, err := h.tenantModel.Update()
 	if err != nil {
+		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusOK, err.Error())
 	}
 
@@ -109,6 +118,7 @@ func (h handler) Update(c echo.Context) error {
 func (h handler) DeleteById(c echo.Context) error {
 	tenantId, err := libUuid.Parse(c.Param("id"))
 	if err != nil {
+		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusOK, err.Error())
 	}
 
@@ -116,6 +126,7 @@ func (h handler) DeleteById(c echo.Context) error {
 
 	isDeleted, err := h.tenantModel.Delete()
 	if err != nil {
+		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusOK, err.Error())
 	}
 	return c.JSON(http.StatusOK, isDeleted)

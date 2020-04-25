@@ -2,9 +2,6 @@ package main
 
 import (
 	"github.com/casbin/casbin/v2"
-	defaultrolemanager "github.com/casbin/casbin/v2/rbac/default-role-manager"
-	"github.com/casbin/casbin/v2/util"
-	gormadapter "github.com/casbin/gorm-adapter/v2"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -16,6 +13,7 @@ import (
 	tenantHandler "gitlab.com/s0j0hn/go-rest-boilerplate-echo/handlers"
 	"golang.org/x/crypto/acme/autocert"
 	"gopkg.in/go-playground/validator.v9"
+	"os"
 
 	"log"
 )
@@ -52,6 +50,13 @@ func (e *PolicyEnforcer) checkPolicyAccessGuests(next echo.HandlerFunc) echo.Han
 	}
 }
 
+func createTenantPolicies(policyEnforcer *casbin.Enforcer) {
+	config.AddGetPolicy(policyEnforcer, "guest", "/tenants")
+	config.AddCreatePolicy(policyEnforcer, "guest", "/tenants")
+	config.AddUpdatePolicy(policyEnforcer, "guest", "/tenants")
+	config.AddDeletePolicy(policyEnforcer, "guest", "/tenants")
+}
+
 func main() {
 
 	echoServer := echo.New()
@@ -61,52 +66,19 @@ func main() {
 	echoServer.Use(middleware.Recover())
 	echoServer.Use(middleware.Logger())
 	echoServer.Use(middleware.Secure())
+	echoServer.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
+		TokenLookup: "header:X-XSRF-TOKEN",
+	}))
 
-	// Initialize a Gorm adapter and use it in a Casbin enforcer:
-	// The adapter will use the MySQL database named "casbin".
-	// If it doesn't exist, the adapter will create it automatically.
-	casbinGormAdapter, err := gormadapter.NewAdapterByDB(database.Connect()) // Your driver and data source.
+	gormClient := database.Connect()
+
+	policyEnforcer, err := config.InitPolicy(gormClient)
 	if err != nil {
-		log.Fatal(err)
+		echoServer.Logger.Fatal(err)
+		os.Exit(1)
 	}
 
-	// We need a new roleManager to force the route params verification ex: (/tenants/:id).
-	var roleManager = defaultrolemanager.NewRoleManager(2)
-	roleManager.(*defaultrolemanager.RoleManager).AddMatchingFunc("KeyMatch2", util.KeyMatch2)
-
-	// Create Policy enforcer with our customized model.
-	policyEnforcer, err := casbin.NewEnforcer("config/keymatch_model", casbinGormAdapter)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	policyEnforcer.SetRoleManager(roleManager)
-
-	// We seed the DB with some policies.
-	// policyEnforcer.AddPolicy("guest", "/tenants", "(GET)|(DELETE)|(POST)|(PUT)").
-	isAdded, err := policyEnforcer.AddPolicy("guest", "/tenants/:id", "(GET)|(POST)")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if isAdded {
-		log.Print("New policy added successfully.")
-	}
-
-	// Logs for casbin.
-	policyEnforcer.EnableLog(true)
-
-	// Load the policy from DB.
-	err = policyEnforcer.LoadPolicy()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Save the policy back to DB.
-	err = policyEnforcer.SavePolicy()
-	if err != nil {
-		log.Fatal(err)
-	}
+	createTenantPolicies(policyEnforcer)
 
 	tenantInstance := tenantModel.TenantModel{}
 	tenantHandlerInstance := tenantHandler.CreateHandler(tenantInstance)
