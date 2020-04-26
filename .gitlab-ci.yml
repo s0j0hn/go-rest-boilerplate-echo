@@ -9,8 +9,8 @@ cache:
     - /go/src/gopkg.in
 
 stages:
-  - test
   - build
+  - test
 
 before_script:
   - mkdir -p /go/src/gitlab.com/pantomath-io /go/src/_/builds
