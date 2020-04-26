@@ -15,6 +15,10 @@ var DbClient *gorm.DB
 
 func TestMain(m *testing.M) {
 	DbClient = database.Connect()
+	err := refreshTenantTable()
+	if err != nil {
+		return
+	}
 
 	os.Exit(m.Run())
 }
@@ -53,10 +57,10 @@ func seedTenants() error {
 	return nil
 }
 
-func seedOneTenant() *TenantModel {
+func seedOneTenant() {
 	err := refreshTenantTable()
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 
 	tenant := TenantModel{
@@ -67,20 +71,20 @@ func seedOneTenant() *TenantModel {
 	tenantSaved, err := tenant.Save()
 	if err != nil {
 		log.Fatalf("Cannot seed tenant table: %v", err)
+		return
 	}
 	log.Printf("Seed with Tenant ID: %s", tenantSaved.Uuid)
-	return nil
 }
 
 func TestGetAllTenants(t *testing.T) {
 	err := refreshTenantTable()
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	err = seedTenants()
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	tenantInstance := TenantModel{}
@@ -92,13 +96,14 @@ func TestGetAllTenants(t *testing.T) {
 	}
 
 	assert.Equal(t, len(*tenants), 2)
-	log.Printf("End TestgetAllTenants")
+	t.Log("End TestgetAllTenants")
 }
 
 func TestSaveTenant(t *testing.T) {
 	err := refreshTenantTable()
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
+		return
 	}
 
 	newUser := TenantModel{
@@ -115,13 +120,14 @@ func TestSaveTenant(t *testing.T) {
 	assert.Equal(t, newUser.ID, savedUser.ID)
 	assert.Equal(t, newUser.Name, savedUser.Name)
 	assert.Equal(t, newUser.Uuid, savedUser.Uuid)
-	log.Printf("End TestSaveTenant")
+	t.Log("End TestSaveTenant")
 }
 
 func TestGetTenantByID(t *testing.T) {
 	err := refreshTenantTable()
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
+		return
 	}
 
 	seedOneTenant()
@@ -133,13 +139,14 @@ func TestGetTenantByID(t *testing.T) {
 		return
 	}
 	assert.Equal(t, foundTenant.Uuid.String(), "39b0b2fc-749f-46f3-8960-453418e72b2e")
-	log.Printf("End TestTenantGetById")
+	t.Log("End TestTenantGetById")
 }
 
 func TestUpdateTenant(t *testing.T) {
 	err := refreshTenantTable()
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
+		return
 	}
 
 	seedOneTenant()
@@ -158,14 +165,15 @@ func TestUpdateTenant(t *testing.T) {
 
 	assert.Equal(t, updatedTenant.ID, newTenant.ID)
 	assert.Equal(t, updatedTenant.Name, newTenant.Name)
-	log.Printf("End TestUpdateTenant")
+	t.Log("End TestUpdateTenant")
 
 }
 
 func TestDeleteTenant(t *testing.T) {
 	err := refreshTenantTable()
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
+		return
 	}
 
 	seedOneTenant()
@@ -180,6 +188,5 @@ func TestDeleteTenant(t *testing.T) {
 	}
 
 	assert.Equal(t, isDeleted, true)
-	log.Printf("End TestDeleteTenant")
-
+	t.Log("End TestDeleteTenant")
 }

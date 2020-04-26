@@ -23,28 +23,21 @@ unit_tests:
   script:
     - make test
 
-#race_detector:
-#  stage: test
-#  script:
-#    - make race
-#
-#memory_sanitizer:
-#  stage: test
-#  script:
-#    - make msan
-#
-#code_coverage:
-#  stage: test
-#  script:
-#    - make coverage
+race_detector:
+  stage: test
+  script:
+    - make race
 
-#code_coverage_report:
-#  stage: test
-#  script:
-#    - make coverhtml
-#  only:
-#  - master
-#
+memory_sanitizer:
+  stage: test
+  script:
+    - make msan
+
+code_coverage:
+  stage: test
+  script:
+    - make coverage
+
 #lint_code:
 #  stage: test
 #  script:
