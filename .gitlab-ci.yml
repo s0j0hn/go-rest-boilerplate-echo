@@ -1,4 +1,4 @@
-image: golang:1.14
+image: registry.gitlab.com/s0j0hn/go-rest-boilerplate-echo:latest
 
 cache:
   paths:
