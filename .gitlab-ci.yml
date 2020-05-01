@@ -1,4 +1,4 @@
-image: registry.gitlab.com/s0j0hn/go-rest-boilerplate-echo-golang:latest
+image: registry.gitlab.com/s0j0hn/go-rest-boilerplate-echo:latest
 
 cache:
   paths:
@@ -31,6 +31,7 @@ race_detector:
 memory_sanitizer:
   stage: test
   script:
+    - uname -r; echo $(gcc -v 2>&1 | grep version); echo $(clang -v 2>&1 | grep version); go version
     - make msan
 
 code_coverage:
