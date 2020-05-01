@@ -16,7 +16,7 @@ before_script:
   - mkdir -p /go/src/gitlab.com/s0j0hn /go/src/_/builds
   - cp -r $CI_PROJECT_DIR /go/src/gitlab.com/s0j0hn/go-rest-boilerplate-echo
   - ln -s /go/src/gitlab.com/s0j0hn /go/src/_/builds/s0j0hn
-  - export CC=clang-9.0
+  - export CC=clang-9
   - make dep
 
 unit_tests:
