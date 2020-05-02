@@ -41,4 +41,3 @@ func GetDataBaseAccess() string {
 	)
 	return connection
 }
-

@@ -34,7 +34,7 @@ func (h handler) GetAll(c echo.Context) error {
 
 	var results []resultJson
 	for _, tenant := range *tenants {
-		results = append(results, resultJson{ ID: tenant.Uuid , Name: tenant.Name })
+		results = append(results, resultJson{ID: tenant.Uuid, Name: tenant.Name})
 	}
 	return c.JSON(http.StatusOK, results)
 }

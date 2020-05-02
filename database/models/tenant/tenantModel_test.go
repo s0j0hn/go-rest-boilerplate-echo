@@ -107,8 +107,8 @@ func TestSaveTenant(t *testing.T) {
 	}
 
 	newUser := TenantModel{
-		Uuid:     libUuid.New(),
-		Name:     "Test",
+		Uuid: libUuid.New(),
+		Name: "Test",
 	}
 
 	savedUser, err := newUser.Save()
@@ -152,8 +152,8 @@ func TestUpdateTenant(t *testing.T) {
 	seedOneTenant()
 
 	existingTenant := TenantModel{
-		Uuid:     libUuid.MustParse("6fcec554-9861-4965-bf7d-036be545a92e"),
-		Name:	  "Gregory",
+		Uuid: libUuid.MustParse("6fcec554-9861-4965-bf7d-036be545a92e"),
+		Name: "Gregory",
 	}
 
 	updatedTenant, err := existingTenant.Update()
@@ -161,7 +161,6 @@ func TestUpdateTenant(t *testing.T) {
 		t.Errorf("Error test updating the tenant: %v\n", err)
 		return
 	}
-
 
 	assert.Equal(t, updatedTenant.ID, existingTenant.ID)
 	assert.Equal(t, updatedTenant.Name, existingTenant.Name)
@@ -177,7 +176,7 @@ func TestDeleteTenant(t *testing.T) {
 
 	seedOneTenant()
 	tenantInstance := TenantModel{
-		Uuid:     libUuid.MustParse("39b0b2fc-749f-46f3-8960-453418e72b2e"),
+		Uuid: libUuid.MustParse("39b0b2fc-749f-46f3-8960-453418e72b2e"),
 	}
 
 	isDeleted, err := tenantInstance.Delete()

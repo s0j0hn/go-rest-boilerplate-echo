@@ -16,12 +16,12 @@ import (
 )
 
 var (
-	mockDBTenant       = tenantModel.TenantModel{}
-	createTenantString = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}`
-	allTenantsString = `[{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}]`
-	updatedTenantString = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME2"}`
+	mockDBTenant             = tenantModel.TenantModel{}
+	createTenantString       = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}`
+	allTenantsString         = `[{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}]`
+	updatedTenantString      = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME2"}`
 	updatedWrongTenantString = `{"id":"yolo","name":"NAME2"}`
-	createWrongTenantString = `{"id":"yolo","name":111}`
+	createWrongTenantString  = `{"id":"yolo","name":111}`
 )
 
 type (
@@ -55,7 +55,6 @@ func refreshTenantTable(t *testing.T) {
 	}
 }
 
-
 func TestCreateTenant(t *testing.T) {
 	refreshTenantTable(t)
 	e := echo.New()
@@ -71,7 +70,7 @@ func TestCreateTenant(t *testing.T) {
 	// Assertions
 	if assert.NoError(t, h.Create(c)) {
 		assert.Equal(t, http.StatusCreated, rec.Code)
-		assert.Equal(t, createTenantString + "\n", rec.Body.String())
+		assert.Equal(t, createTenantString+"\n", rec.Body.String())
 	}
 }
 
@@ -106,7 +105,7 @@ func TestGetAllTenants(t *testing.T) {
 	// Assertions
 	if assert.NoError(t, h.GetAll(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, allTenantsString+ "\n", rec.Body.String())
+		assert.Equal(t, allTenantsString+"\n", rec.Body.String())
 	}
 }
 
@@ -160,7 +159,7 @@ func TestUpdateTenant(t *testing.T) {
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
-		assert.Equal(t, updatedTenantString + "\n", rec.Body.String())
+		assert.Equal(t, updatedTenantString+"\n", rec.Body.String())
 	}
 }
 
@@ -182,7 +181,6 @@ func TestDeleteTenant(t *testing.T) {
 		assert.Equal(t, "true\n", rec.Body.String())
 	}
 }
-
 
 func TestDeleteNotFoundTenant(t *testing.T) {
 	e := echo.New()

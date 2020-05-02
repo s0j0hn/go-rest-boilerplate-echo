@@ -9,8 +9,8 @@ import (
 
 type TenantModel struct {
 	gorm.Model
-	Uuid      libUuid.UUID `gorm:"unique_index;not null"`
-	Name      string       `gorm:"unique;not null"`
+	Uuid libUuid.UUID `gorm:"unique_index;not null"`
+	Name string       `gorm:"unique;not null"`
 }
 
 func (TenantModel) TableName() string {
@@ -57,7 +57,7 @@ func (tenantModel *TenantModel) Update() (*TenantModel, error) {
 		return &TenantModel{}, transaction.Error
 	}
 
-	err := transaction.Model(&tenantModel).Update(TenantModel{ Name: tenantModel.Name, Uuid: tenantModel.Uuid}).Error
+	err := transaction.Model(&tenantModel).Update(TenantModel{Name: tenantModel.Name, Uuid: tenantModel.Uuid}).Error
 	if err != nil {
 		transaction.Rollback()
 		return nil, err
