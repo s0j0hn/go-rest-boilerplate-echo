@@ -1,6 +1,8 @@
 #! /usr/bin/make
-
-export GO111MODULE=on
+PROJECT_NAME := "boilerplate"
+PKG := "gitlab.com/s0j0hn/$(PROJECT_NAME)"
+PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/)
+GO_FILES := $(shell find . -name '*.go' | grep -v /vendor/ | grep -v _test.go)
 
 all:test build
 	@echo DONE!
@@ -18,8 +20,20 @@ postgres:
 	@docker stack deploy --compose-file docker-compose.yml postgres
 
 test:
-	@echo TESTING...
-	@go test ./... -v
+	@echo UNIT TESTING...
+	@go test ./... -v -cover -coverprofile=coverage.cov
+
+msan:
+	@echo MEMORY TESTING...
+	@go test -msan -short $(go list ./... | grep -v /vendor/)
+
+race:
+	@echo RACE TESTING...
+	@go test -race -short $(go list ./... | grep -v /vendor/)
+
+coverage: test
+	@echo COVERAGE TESTING...
+	@go tool cover -func=coverage.cov
 
 serve: build
 	@echo SERVING...

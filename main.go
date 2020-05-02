@@ -91,8 +91,8 @@ func main() {
 	// Apply the policy for all routes.
 	echoServer.Use(policyCheck.checkPolicyAccessGuests)
 	echoServer.GET("/swagger/*", echoSwagger.WrapHandler)
-	echoServer.GET("/tenants", tenantHandlerInstance.GetAll)
 	echoServer.GET("/tenants/:id", tenantHandlerInstance.GetOneById)
+	echoServer.GET("/tenants", tenantHandlerInstance.GetAll)
 	echoServer.POST("/tenants", tenantHandlerInstance.Create)
 	echoServer.PUT("/tenants", tenantHandlerInstance.Update)
 	echoServer.DELETE("/tenants/:id", tenantHandlerInstance.DeleteById)

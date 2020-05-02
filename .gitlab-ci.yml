@@ -1,0 +1,51 @@
+image: registry.gitlab.com/s0j0hn/go-rest-boilerplate-echo:latest
+
+cache:
+  paths:
+    - /apt-cache
+    - /go/src/github.com
+    - /go/src/golang.org
+    - /go/src/google.golang.org
+    - /go/src/gopkg.in
+
+stages:
+  - build
+  - test
+
+before_script:
+  - mkdir -p /go/src/gitlab.com/s0j0hn /go/src/_/builds
+  - cp -r $CI_PROJECT_DIR /go/src/gitlab.com/s0j0hn/go-rest-boilerplate-echo
+  - ln -s /go/src/gitlab.com/s0j0hn /go/src/_/builds/s0j0hn
+  - export CC=clang
+  - make dep
+
+unit_tests:
+  stage: test
+  script:
+    - make test
+
+#race_detector:
+#  stage: test
+#  script:
+#    - make race
+#
+#memory_sanitizer:
+#  stage: test
+#  script:
+#    - uname -r; echo $(gcc -v 2>&1 | grep version); echo $(clang -v 2>&1 | grep version); go version
+#    - make msan
+
+code_coverage:
+  stage: test
+  script:
+    - make coverage
+
+#lint_code:
+#  stage: test
+#  script:
+#    - make lint
+
+build:
+  stage: build
+  script:
+    - make build

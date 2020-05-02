@@ -1,9 +1,9 @@
 package tenantModel
 
 import (
+	libUuid "github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	libUuid "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/database"
 	"log"
@@ -14,7 +14,11 @@ import (
 var DbClient *gorm.DB
 
 func TestMain(m *testing.M) {
-	DbClient = database.Connect()
+	DbClient = database.ConnectForTests()
+	err := refreshTenantTable()
+	if err != nil {
+		return
+	}
 
 	os.Exit(m.Run())
 }
@@ -53,34 +57,34 @@ func seedTenants() error {
 	return nil
 }
 
-func seedOneTenant() *TenantModel {
+func seedOneTenant() {
 	err := refreshTenantTable()
 	if err != nil {
-		log.Fatal(err)
+		return
 	}
 
 	tenant := TenantModel{
 		Name: "Greg",
-		Uuid: libUuid.MustParse("39b0b2fc-749f-46f3-8960-453418e72b2e"),
+		Uuid: libUuid.MustParse("6fcec554-9861-4965-bf7d-036be545a92e"),
 	}
 
 	tenantSaved, err := tenant.Save()
 	if err != nil {
 		log.Fatalf("Cannot seed tenant table: %v", err)
+		return
 	}
 	log.Printf("Seed with Tenant ID: %s", tenantSaved.Uuid)
-	return nil
 }
 
 func TestGetAllTenants(t *testing.T) {
 	err := refreshTenantTable()
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	err = seedTenants()
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
 	}
 
 	tenantInstance := TenantModel{}
@@ -92,18 +96,19 @@ func TestGetAllTenants(t *testing.T) {
 	}
 
 	assert.Equal(t, len(*tenants), 2)
-	log.Printf("End TestgetAllTenants")
+	t.Log("End TestgetAllTenants")
 }
 
 func TestSaveTenant(t *testing.T) {
 	err := refreshTenantTable()
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
+		return
 	}
 
 	newUser := TenantModel{
-		Uuid:     libUuid.New(),
-		Name:     "Test",
+		Uuid: libUuid.New(),
+		Name: "Test",
 	}
 
 	savedUser, err := newUser.Save()
@@ -115,62 +120,63 @@ func TestSaveTenant(t *testing.T) {
 	assert.Equal(t, newUser.ID, savedUser.ID)
 	assert.Equal(t, newUser.Name, savedUser.Name)
 	assert.Equal(t, newUser.Uuid, savedUser.Uuid)
-	log.Printf("End TestSaveTenant")
+	t.Log("End TestSaveTenant")
 }
 
 func TestGetTenantByID(t *testing.T) {
 	err := refreshTenantTable()
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
+		return
 	}
 
 	seedOneTenant()
-	tenantInstance := TenantModel{Uuid: libUuid.MustParse("39b0b2fc-749f-46f3-8960-453418e72b2e")}
+	tenantInstance := TenantModel{Uuid: libUuid.MustParse("6fcec554-9861-4965-bf7d-036be545a92e")}
 
 	foundTenant, err := tenantInstance.GetOne()
 	if err != nil {
 		t.Errorf("Error getting one tenant: %v\n", err)
 		return
 	}
-	assert.Equal(t, foundTenant.Uuid.String(), "39b0b2fc-749f-46f3-8960-453418e72b2e")
-	log.Printf("End TestTenantGetById")
+	assert.Equal(t, foundTenant.Uuid.String(), "6fcec554-9861-4965-bf7d-036be545a92e")
+	t.Log("End TestTenantGetById")
 }
 
 func TestUpdateTenant(t *testing.T) {
 	err := refreshTenantTable()
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
+		return
 	}
 
 	seedOneTenant()
 
-	newTenant := TenantModel{
-		Uuid:     libUuid.MustParse("39b0b2fc-749f-46f3-8960-453418e72b2e"),
-		Name:	  "Gregory",
+	existingTenant := TenantModel{
+		Uuid: libUuid.MustParse("6fcec554-9861-4965-bf7d-036be545a92e"),
+		Name: "Gregory",
 	}
 
-	updatedTenant, err := newTenant.Update()
+	updatedTenant, err := existingTenant.Update()
 	if err != nil {
 		t.Errorf("Error test updating the tenant: %v\n", err)
 		return
 	}
 
-
-	assert.Equal(t, updatedTenant.ID, newTenant.ID)
-	assert.Equal(t, updatedTenant.Name, newTenant.Name)
-	log.Printf("End TestUpdateTenant")
-
+	assert.Equal(t, updatedTenant.ID, existingTenant.ID)
+	assert.Equal(t, updatedTenant.Name, existingTenant.Name)
+	t.Log("End TestUpdateTenant")
 }
 
 func TestDeleteTenant(t *testing.T) {
 	err := refreshTenantTable()
 	if err != nil {
-		log.Fatal(err)
+		t.Fatal(err)
+		return
 	}
 
 	seedOneTenant()
 	tenantInstance := TenantModel{
-		Uuid:     libUuid.MustParse("39b0b2fc-749f-46f3-8960-453418e72b2e"),
+		Uuid: libUuid.MustParse("39b0b2fc-749f-46f3-8960-453418e72b2e"),
 	}
 
 	isDeleted, err := tenantInstance.Delete()
@@ -180,6 +186,5 @@ func TestDeleteTenant(t *testing.T) {
 	}
 
 	assert.Equal(t, isDeleted, true)
-	log.Printf("End TestDeleteTenant")
-
+	t.Log("End TestDeleteTenant")
 }

@@ -9,8 +9,8 @@ import (
 
 type TenantModel struct {
 	gorm.Model
-	Uuid      libUuid.UUID `gorm:"unique_index;not null"`
-	Name      string       `gorm:"unique;not null"`
+	Uuid libUuid.UUID `gorm:"unique_index;not null"`
+	Name string       `gorm:"unique;not null"`
 }
 
 func (TenantModel) TableName() string {
@@ -28,7 +28,7 @@ func (tenantModel *TenantModel) GetAll() (*[]TenantModel, error) {
 	var tenants []TenantModel
 	err := databaseManager.Connect().Find(&tenants).Error
 	if err != nil {
-		return &[]TenantModel{}, err
+		return nil, err
 	}
 	return &tenants, nil
 }
@@ -37,13 +37,13 @@ func (tenantModel *TenantModel) Save() (*TenantModel, error) {
 	transation := databaseManager.Connect().Begin()
 
 	if transation.Error != nil {
-		return &TenantModel{}, transation.Error
+		return nil, transation.Error
 	}
 
 	err := transation.Create(&tenantModel).Error
 	if err != nil {
 		transation.Rollback()
-		return &TenantModel{}, err
+		return nil, err
 	}
 
 	transation.Commit()
@@ -57,10 +57,10 @@ func (tenantModel *TenantModel) Update() (*TenantModel, error) {
 		return &TenantModel{}, transaction.Error
 	}
 
-	err := transaction.Update(tenantModel.Uuid, tenantModel.Name).Error
+	err := transaction.Model(&tenantModel).Update(TenantModel{Name: tenantModel.Name, Uuid: tenantModel.Uuid}).Error
 	if err != nil {
 		transaction.Rollback()
-		return &TenantModel{}, err
+		return nil, err
 	}
 
 	transaction.Commit()
@@ -70,11 +70,11 @@ func (tenantModel *TenantModel) Update() (*TenantModel, error) {
 func (tenantModel *TenantModel) GetOne() (*TenantModel, error) {
 	err := databaseManager.Connect().First(&tenantModel).Error
 	if err != nil {
-		return &TenantModel{}, err
+		return nil, err
 	}
 
 	if gorm.IsRecordNotFoundError(err) {
-		return &TenantModel{}, errors.New("tenant not found in database")
+		return nil, errors.New("tenant not found in database")
 	}
 
 	return tenantModel, nil
@@ -87,7 +87,7 @@ func (tenantModel *TenantModel) Delete() (bool, error) {
 		return false, transaction.Error
 	}
 
-	err := transaction.Unscoped().Delete(&tenantModel).Error
+	err := transaction.First(&tenantModel).Unscoped().Delete(&tenantModel).Error
 	if err != nil {
 		transaction.Rollback()
 		return false, err
