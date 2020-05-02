@@ -34,19 +34,19 @@ func (tenantModel *TenantModel) GetAll() (*[]TenantModel, error) {
 }
 
 func (tenantModel *TenantModel) Save() (*TenantModel, error) {
-	transation := databaseManager.Connect().Begin()
+	transaction := databaseManager.Connect().Begin()
 
-	if transation.Error != nil {
-		return nil, transation.Error
+	if transaction.Error != nil {
+		return nil, transaction.Error
 	}
 
-	err := transation.Create(&tenantModel).Error
+	err := transaction.Create(&tenantModel).Error
 	if err != nil {
-		transation.Rollback()
+		transaction.Rollback()
 		return nil, err
 	}
 
-	transation.Commit()
+	transaction.Commit()
 	return tenantModel, nil
 }
 
