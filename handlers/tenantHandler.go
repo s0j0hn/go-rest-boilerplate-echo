@@ -43,7 +43,7 @@ func (h handler) GetOneById(c echo.Context) error {
 	tenantId, err := libUuid.Parse(c.Param("id"))
 	if err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusInternalServerError, err.Error())
+		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	h.tenantModel.Uuid = tenantId
@@ -69,7 +69,7 @@ func (h handler) Create(c echo.Context) error {
 
 	if err := c.Validate(post); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusInternalServerError, err.Error())
+		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	h.tenantModel.Uuid = post.ID
@@ -92,12 +92,12 @@ func (h handler) Update(c echo.Context) error {
 
 	if err := c.Bind(post); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, err.Error())
+		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
 	if err := c.Validate(post); err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, err.Error())
+		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	h.tenantModel.Uuid = post.ID
@@ -106,7 +106,7 @@ func (h handler) Update(c echo.Context) error {
 	tenant, err := h.tenantModel.Update()
 	if err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, err.Error())
+		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
 	return c.JSON(http.StatusOK, resultJson{
@@ -119,7 +119,7 @@ func (h handler) DeleteById(c echo.Context) error {
 	tenantId, err := libUuid.Parse(c.Param("id"))
 	if err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, err.Error())
+		return c.JSON(http.StatusNotFound, err.Error())
 	}
 
 	h.tenantModel.Uuid = tenantId
@@ -127,7 +127,7 @@ func (h handler) DeleteById(c echo.Context) error {
 	isDeleted, err := h.tenantModel.Delete()
 	if err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusOK, err.Error())
+		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(http.StatusOK, isDeleted)
 }

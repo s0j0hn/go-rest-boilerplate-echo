@@ -12,7 +12,7 @@ require (
 	github.com/labstack/echo/v4 v4.1.16
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/lib/pq v1.4.0 // indirect
-	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
+	github.com/mattn/go-sqlite3 v1.13.0 // indirect
 	github.com/spf13/viper v1.6.3
 	github.com/stretchr/testify v1.5.0
 	github.com/swaggo/echo-swagger v1.0.0

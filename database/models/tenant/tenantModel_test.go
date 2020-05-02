@@ -1,9 +1,9 @@
 package tenantModel
 
 import (
+	libUuid "github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
-	libUuid "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/database"
 	"log"
@@ -14,7 +14,7 @@ import (
 var DbClient *gorm.DB
 
 func TestMain(m *testing.M) {
-	DbClient = database.Connect()
+	DbClient = database.ConnectForTests()
 	err := refreshTenantTable()
 	if err != nil {
 		return
@@ -65,7 +65,7 @@ func seedOneTenant() {
 
 	tenant := TenantModel{
 		Name: "Greg",
-		Uuid: libUuid.MustParse("39b0b2fc-749f-46f3-8960-453418e72b2e"),
+		Uuid: libUuid.MustParse("6fcec554-9861-4965-bf7d-036be545a92e"),
 	}
 
 	tenantSaved, err := tenant.Save()
@@ -131,14 +131,14 @@ func TestGetTenantByID(t *testing.T) {
 	}
 
 	seedOneTenant()
-	tenantInstance := TenantModel{Uuid: libUuid.MustParse("39b0b2fc-749f-46f3-8960-453418e72b2e")}
+	tenantInstance := TenantModel{Uuid: libUuid.MustParse("6fcec554-9861-4965-bf7d-036be545a92e")}
 
 	foundTenant, err := tenantInstance.GetOne()
 	if err != nil {
 		t.Errorf("Error getting one tenant: %v\n", err)
 		return
 	}
-	assert.Equal(t, foundTenant.Uuid.String(), "39b0b2fc-749f-46f3-8960-453418e72b2e")
+	assert.Equal(t, foundTenant.Uuid.String(), "6fcec554-9861-4965-bf7d-036be545a92e")
 	t.Log("End TestTenantGetById")
 }
 
@@ -151,22 +151,21 @@ func TestUpdateTenant(t *testing.T) {
 
 	seedOneTenant()
 
-	newTenant := TenantModel{
-		Uuid:     libUuid.MustParse("39b0b2fc-749f-46f3-8960-453418e72b2e"),
+	existingTenant := TenantModel{
+		Uuid:     libUuid.MustParse("6fcec554-9861-4965-bf7d-036be545a92e"),
 		Name:	  "Gregory",
 	}
 
-	updatedTenant, err := newTenant.Update()
+	updatedTenant, err := existingTenant.Update()
 	if err != nil {
 		t.Errorf("Error test updating the tenant: %v\n", err)
 		return
 	}
 
 
-	assert.Equal(t, updatedTenant.ID, newTenant.ID)
-	assert.Equal(t, updatedTenant.Name, newTenant.Name)
+	assert.Equal(t, updatedTenant.ID, existingTenant.ID)
+	assert.Equal(t, updatedTenant.Name, existingTenant.Name)
 	t.Log("End TestUpdateTenant")
-
 }
 
 func TestDeleteTenant(t *testing.T) {
