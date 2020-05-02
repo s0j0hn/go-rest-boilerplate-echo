@@ -1,4 +1,8 @@
 # Go REST API Boilerplate
+[![Build Status](https://gitlab.com/s0j0hn/go-rest-boilerplate-echo/badges/master/build.svg)](https://gitlab.com/s0j0hn/go-rest-boilerplate-echo/commits/master)
+[![Coverage Report](https://gitlab.com/s0j0hn/go-rest-boilerplate-echo/badges/master/coverage.svg)](https://gitlab.com/s0j0hn/go-rest-boilerplate-echo/commits/master)
+[![Go Report Card](https://goreportcard.com/badge/gitlab.com/s0j0hn/go-rest-boilerplate-echo)](https://goreportcard.com/report/gitlab.com/s0j0hn/go-rest-boilerplate-echo)
+[![License MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://img.shields.io/badge/License-MIT-brightgreen.svg)
 
 - github.com/labstack/echo 
 - github.com/jinzhu/gorm
