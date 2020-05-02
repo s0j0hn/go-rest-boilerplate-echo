@@ -18,6 +18,10 @@ func (TenantModel) TableName() string {
 }
 
 func (tenantModel *TenantModel) BeforeCreate(scope *gorm.Scope) error {
+	if len(tenantModel.Name) == 0 {
+		return errors.New("name can't be empty")
+	}
+
 	if tenantModel.Uuid.String() == "00000000-0000-0000-0000-000000000000" {
 		return scope.SetColumn("Uuid", libUuid.New())
 	}
@@ -68,10 +72,7 @@ func (tenantModel *TenantModel) Update() (*TenantModel, error) {
 }
 
 func (tenantModel *TenantModel) GetOne() (*TenantModel, error) {
-	err := databaseManager.Connect().First(&tenantModel).Error
-	if err != nil {
-		return nil, err
-	}
+	err := databaseManager.Connect().Where(&TenantModel{Uuid: tenantModel.Uuid}).First(&tenantModel).Error
 
 	if gorm.IsRecordNotFoundError(err) {
 		return nil, errors.New("tenant not found in database")

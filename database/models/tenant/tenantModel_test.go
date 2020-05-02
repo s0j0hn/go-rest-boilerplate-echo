@@ -26,11 +26,13 @@ func TestMain(m *testing.M) {
 func refreshTenantTable() error {
 	err := DbClient.DropTableIfExists(&TenantModel{}).Error
 	if err != nil {
+		log.Fatalf("Cannot refresh tenant table: %v", err)
 		return err
 	}
 
 	err = DbClient.AutoMigrate(&TenantModel{}).Error
 	if err != nil {
+		log.Fatalf("Cannot automigrate tenant table: %v", err)
 		return err
 	}
 
@@ -60,6 +62,7 @@ func seedTenants() error {
 func seedOneTenant() {
 	err := refreshTenantTable()
 	if err != nil {
+		log.Fatalf("Cannot seed tenant table: %v", err)
 		return
 	}
 
@@ -123,6 +126,26 @@ func TestSaveTenant(t *testing.T) {
 	t.Log("End TestSaveTenant")
 }
 
+func TestWrongSaveTenant(t *testing.T) {
+	err := refreshTenantTable()
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+
+	newUser := TenantModel{
+		Uuid: libUuid.New(),
+		Name: "",
+	}
+
+	savedUser, err := newUser.Save()
+	if assert.Error(t, err) {
+		assert.Nil(t, savedUser)
+		assert.Equal(t, "name can't be empty", err.Error())
+		t.Log("End TestWrongSaveTenant")
+	}
+}
+
 func TestGetTenantByID(t *testing.T) {
 	err := refreshTenantTable()
 	if err != nil {
@@ -140,6 +163,24 @@ func TestGetTenantByID(t *testing.T) {
 	}
 	assert.Equal(t, foundTenant.Uuid.String(), "6fcec554-9861-4965-bf7d-036be545a92e")
 	t.Log("End TestTenantGetById")
+}
+
+func TestGetWrongTenantByID(t *testing.T) {
+	err := refreshTenantTable()
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+
+	seedOneTenant()
+	tenantInstance := TenantModel{Uuid: libUuid.MustParse("6fcec554-9861-4965-bf7d-036be545a93e")}
+
+	foundTenant, err := tenantInstance.GetOne()
+
+	if assert.Nil(t, foundTenant) {
+		assert.Equal(t, "tenant not found in database", err.Error())
+		t.Log("End TestTenantGetById")
+	}
 }
 
 func TestUpdateTenant(t *testing.T) {
