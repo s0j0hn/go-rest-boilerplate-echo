@@ -12,6 +12,7 @@ import (
 )
 
 var DbClient *gorm.DB
+var validTenantId = "6fcec554-9861-4965-bf7d-036be545a92e"
 
 func TestMain(m *testing.M) {
 	DbClient = database.ConnectForTests()
@@ -68,7 +69,7 @@ func seedOneTenant() {
 
 	tenant := TenantModel{
 		Name: "Greg",
-		Uuid: libUuid.MustParse("6fcec554-9861-4965-bf7d-036be545a92e"),
+		Uuid: libUuid.MustParse(validTenantId),
 	}
 
 	tenantSaved, err := tenant.Save()
@@ -154,14 +155,14 @@ func TestGetTenantByID(t *testing.T) {
 	}
 
 	seedOneTenant()
-	tenantInstance := TenantModel{Uuid: libUuid.MustParse("6fcec554-9861-4965-bf7d-036be545a92e")}
+	tenantInstance := TenantModel{Uuid: libUuid.MustParse(validTenantId)}
 
 	foundTenant, err := tenantInstance.GetOne()
 	if err != nil {
 		t.Errorf("Error getting one tenant: %v\n", err)
 		return
 	}
-	assert.Equal(t, foundTenant.Uuid.String(), "6fcec554-9861-4965-bf7d-036be545a92e")
+	assert.Equal(t, foundTenant.Uuid.String(), validTenantId)
 	t.Log("End TestTenantGetById")
 }
 
@@ -173,7 +174,7 @@ func TestGetWrongTenantByID(t *testing.T) {
 	}
 
 	seedOneTenant()
-	tenantInstance := TenantModel{Uuid: libUuid.MustParse("6fcec554-9861-4965-bf7d-036be545a93e")}
+	tenantInstance := TenantModel{Uuid: libUuid.New()}
 
 	foundTenant, err := tenantInstance.GetOne()
 
@@ -193,7 +194,7 @@ func TestUpdateTenant(t *testing.T) {
 	seedOneTenant()
 
 	existingTenant := TenantModel{
-		Uuid: libUuid.MustParse("6fcec554-9861-4965-bf7d-036be545a92e"),
+		Uuid: libUuid.MustParse(validTenantId),
 		Name: "Gregory",
 	}
 
@@ -208,6 +209,28 @@ func TestUpdateTenant(t *testing.T) {
 	t.Log("End TestUpdateTenant")
 }
 
+func TestUpdateWrongTenant(t *testing.T) {
+	err := refreshTenantTable()
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+
+	seedOneTenant()
+
+	existingTenant := TenantModel{
+		Uuid: libUuid.New(),
+	}
+
+	updatedTenant, err := existingTenant.Update()
+
+	if assert.Error(t, err) {
+		assert.Equal(t, "name can't be empty", err.Error())
+		assert.Nil(t, updatedTenant)
+		t.Log("End TestUpdateWrongTenant")
+	}
+}
+
 func TestDeleteTenant(t *testing.T) {
 	err := refreshTenantTable()
 	if err != nil {
@@ -217,7 +240,7 @@ func TestDeleteTenant(t *testing.T) {
 
 	seedOneTenant()
 	tenantInstance := TenantModel{
-		Uuid: libUuid.MustParse("39b0b2fc-749f-46f3-8960-453418e72b2e"),
+		Uuid: libUuid.MustParse(validTenantId),
 	}
 
 	isDeleted, err := tenantInstance.Delete()
@@ -226,6 +249,29 @@ func TestDeleteTenant(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, isDeleted, true)
+	assert.Equal(t, true, isDeleted)
 	t.Log("End TestDeleteTenant")
+}
+
+func TestDeleteWrongTenant(t *testing.T) {
+	err := refreshTenantTable()
+	if err != nil {
+		t.Fatal(err)
+		return
+	}
+
+	seedOneTenant()
+	tenantInstance := TenantModel{
+		Uuid: libUuid.New(),
+	}
+
+	isDeleted, err := tenantInstance.Delete()
+	log.Printf("Errors when delete: %v", err)
+	if err != nil {
+		t.Errorf("Error test deleting the wrong tenant: %v\n", err)
+		return
+	}
+
+	assert.Equal(t, isDeleted, false)
+	t.Log("End TestDeleteWrongTenant")
 }

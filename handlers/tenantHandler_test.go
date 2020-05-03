@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	libUuid "github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -22,6 +23,7 @@ var (
 	updatedTenantString      = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME2"}`
 	updatedWrongTenantString = `{"id":"yolo","name":"NAME2"}`
 	createWrongTenantString  = `{"id":"yolo","name":111}`
+	validTenantId		     = "39b0b2fc-749f-46f3-8960-453418e72b2e"
 )
 
 type (
@@ -97,7 +99,7 @@ func TestGetTenant(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
-	c.SetParamValues("39b0b2fc-749f-46f3-8960-453418e72b2e")
+	c.SetParamValues(validTenantId)
 	h := &handler{mockDBTenant}
 
 	// Assertions
@@ -118,6 +120,21 @@ func TestGetTenant(t *testing.T) {
 	if assert.NoError(t, h.GetOneById(c)) {
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 		assert.Equal(t, "\"invalid UUID length: 4\"\n", rec.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec = httptest.NewRecorder()
+	c = e.NewContext(req, rec)
+	c.SetPath("/tenants/:id")
+	c.SetParamNames("id")
+	c.SetParamValues(libUuid.New().String())
+	h = &handler{mockDBTenant}
+
+	// Assertions
+	if assert.NoError(t, h.GetOneById(c)) {
+		assert.Equal(t, http.StatusNotFound, rec.Code)
+		assert.Equal(t, "null\n", rec.Body.String())
 	}
 }
 
@@ -171,9 +188,8 @@ func TestUpdateTenant(t *testing.T) {
 
 func TestCreateHandler(t *testing.T) {
 	h := CreateHandler(mockDBTenant)
-	assert.NotNil(t, h.tenantModel)
 	assert.NotNil(t, h)
-
+	assert.NotNil(t, h.tenantModel)
 }
 
 func TestDeleteTenant(t *testing.T) {
@@ -185,7 +201,7 @@ func TestDeleteTenant(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
-	c.SetParamValues("39b0b2fc-749f-46f3-8960-453418e72b2e")
+	c.SetParamValues(validTenantId)
 	h := &handler{mockDBTenant}
 
 	// Assertions
@@ -213,12 +229,12 @@ func TestDeleteTenant(t *testing.T) {
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
-	c.SetParamValues("39b0b2fc-749f-46f3-8960-453418e72b3e")
+	c.SetParamValues(libUuid.New().String())
 	h = &handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.DeleteById(c)) {
-		assert.Equal(t, http.StatusInternalServerError, rec.Code)
-		assert.Equal(t, "\"record not found\"\n", rec.Body.String())
+		assert.Equal(t, http.StatusOK, rec.Code)
+		assert.Equal(t, "false\n", rec.Body.String())
 	}
 }
