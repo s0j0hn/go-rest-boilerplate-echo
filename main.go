@@ -84,9 +84,6 @@ func main() {
 	echoServer.Use(middleware.Recover())
 	echoServer.Use(middleware.Logger())
 	echoServer.Use(middleware.Secure())
-	echoServer.Use(middleware.CSRFWithConfig(middleware.CSRFConfig{
-		TokenLookup: "header:X-XSRF-TOKEN",
-	}))
 
 	gormClient := database.Connect()
 	migrate.MigrateDatabase()

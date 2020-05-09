@@ -62,7 +62,7 @@ func AddCreatePolicy(policyEnforcer *casbin.Enforcer, user string, url string) {
 }
 
 func AddUpdatePolicy(policyEnforcer *casbin.Enforcer, user string, url string) {
-	isAdded, err := policyEnforcer.AddPolicy(user, url, "POST")
+	isAdded, err := policyEnforcer.AddPolicy(user, url, "PUT")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func AddUpdatePolicy(policyEnforcer *casbin.Enforcer, user string, url string) {
 }
 
 func AddDeletePolicy(policyEnforcer *casbin.Enforcer, user string, url string) {
-	isAdded, err := policyEnforcer.AddPolicy(user, url, "POST")
+	isAdded, err := policyEnforcer.AddPolicy(user, url+"/:id", "DELETE")
 	if err != nil {
 		log.Fatal(err)
 	}

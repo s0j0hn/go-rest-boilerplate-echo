@@ -89,6 +89,10 @@ func (tenantModel *TenantModel) GetOne() (*TenantModel, error) {
 }
 
 func (tenantModel *TenantModel) Delete() (bool, error) {
+	if tenantModel.Uuid.String() == "00000000-0000-0000-0000-000000000000" {
+		return false, errors.New("no uuid specified")
+	}
+
 	err := databaseManager.Connect().Where(&TenantModel{Uuid: tenantModel.Uuid}).First(&tenantModel).Error
 
 	if gorm.IsRecordNotFoundError(err) {

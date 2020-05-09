@@ -249,29 +249,27 @@ func TestDeleteTenant(t *testing.T) {
 		return
 	}
 
-	assert.Equal(t, true, isDeleted)
-	t.Log("End TestDeleteTenant")
-}
+	if assert.NoError(t, err) {
+		assert.Equal(t, true, isDeleted)
+		t.Log("End TestDeleteTenant")
+	}
 
-func TestDeleteWrongTenant(t *testing.T) {
-	err := refreshTenantTable()
+
+	err = refreshTenantTable()
 	if err != nil {
 		t.Fatal(err)
 		return
 	}
 
-	seedOneTenant()
-	tenantInstance := TenantModel{
-		Uuid: libUuid.New(),
+	tenantInstance = TenantModel{
+		Uuid: libUuid.MustParse("00000000-0000-0000-0000-000000000000"),
 	}
 
-	isDeleted, err := tenantInstance.Delete()
-	log.Printf("Errors when delete: %v", err)
-	if err != nil {
-		t.Errorf("Error test deleting the wrong tenant: %v\n", err)
-		return
-	}
+	isDeleted, err = tenantInstance.Delete()
 
-	assert.Equal(t, isDeleted, false)
-	t.Log("End TestDeleteWrongTenant")
+	if assert.Error(t, err) {
+		assert.Equal(t, "no uuid specified", err.Error())
+		assert.Equal(t, isDeleted, false)
+		t.Log("End TestDeleteWrongTenant")
+	}
 }
