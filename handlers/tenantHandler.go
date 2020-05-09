@@ -48,6 +48,12 @@ func (h handler) GetAll(c echo.Context) error {
 	for _, tenant := range *tenants {
 		results = append(results, resultJson{ID: tenant.Uuid, Name: tenant.Name})
 	}
+
+	if len(results) == 0 {
+		return c.JSON(http.StatusOK, []resultJson{})
+
+	}
+
 	return c.JSON(http.StatusOK, results)
 }
 
