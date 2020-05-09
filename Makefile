@@ -35,7 +35,7 @@ race:
 	@echo RACE TESTING...
 	@go test -race -short $(go list ./... | grep -v /vendor/)
 
-coverage: test
+coverage:
 	@echo COVERAGE TESTING...
 	@go tool cover -func=coverage.cov
 

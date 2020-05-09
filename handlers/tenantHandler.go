@@ -63,7 +63,7 @@ func (h handler) GetOneById(c echo.Context) error {
 	tenant, err := h.tenantModel.GetOne()
 	if err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusInternalServerError, err.Error())
+		return c.JSON(http.StatusNotFound, nil)
 	}
 
 	return c.JSON(http.StatusOK, &resultJson{
