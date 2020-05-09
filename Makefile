@@ -11,9 +11,13 @@ dep:
 	@echo DOWONLOADING MODULES...
 	@go mod download
 
-build:
+build: swagger
 	@echo GENERATING CODE...
 	@go build -o dist/server
+
+swagger:
+	@echo GENERATING SWAGGER...
+	@swag init
 
 postgres:
 	@echo GENERATING CODE...
@@ -35,6 +39,6 @@ coverage: test
 	@echo COVERAGE TESTING...
 	@go tool cover -func=coverage.cov
 
-serve: build
+serve: swagger build
 	@echo SERVING...
 	@./dist/server

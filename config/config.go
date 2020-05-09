@@ -10,11 +10,6 @@ func getViper() *viper.Viper {
 	vp.SetConfigName("config")
 	vp.SetConfigType("yaml")
 	vp.AddConfigPath(".")
-	vp.AddConfigPath("../")
-	vp.AddConfigPath("../../")
-	vp.AddConfigPath("../../../")
-	vp.AddConfigPath("../../../../")
-	vp.AddConfigPath("../../../../../")
 	err := vp.ReadInConfig()
 
 	if err != nil {
@@ -27,8 +22,8 @@ func IsProd() bool {
 	return getViper().Get("app") == "prod"
 }
 
-func GetPort() string {
-	return getViper().Get("port").(string)
+func GetAddress() string {
+	return getViper().Get("address").(string)
 }
 
 func GetDataBaseAccess() string {
