@@ -18,10 +18,21 @@ func (TenantModel) TableName() string {
 }
 
 func (tenantModel *TenantModel) BeforeCreate(scope *gorm.Scope) error {
+	if len(tenantModel.Name) == 0 {
+		return errors.New("name can't be empty")
+	}
+
 	if tenantModel.Uuid.String() == "00000000-0000-0000-0000-000000000000" {
 		return scope.SetColumn("Uuid", libUuid.New())
 	}
 	return scope.SetColumn("Uuid", tenantModel.Uuid)
+}
+
+func (tenantModel *TenantModel) BeforeSave(scope *gorm.Scope) error {
+	if len(tenantModel.Name) == 0 {
+		return errors.New("name can't be empty")
+	}
+	return nil
 }
 
 func (tenantModel *TenantModel) GetAll() (*[]TenantModel, error) {
@@ -34,19 +45,19 @@ func (tenantModel *TenantModel) GetAll() (*[]TenantModel, error) {
 }
 
 func (tenantModel *TenantModel) Save() (*TenantModel, error) {
-	transation := databaseManager.Connect().Begin()
+	transaction := databaseManager.Connect().Begin()
 
-	if transation.Error != nil {
-		return nil, transation.Error
+	if transaction.Error != nil {
+		return nil, transaction.Error
 	}
 
-	err := transation.Create(&tenantModel).Error
+	err := transaction.Create(&tenantModel).Error
 	if err != nil {
-		transation.Rollback()
+		transaction.Rollback()
 		return nil, err
 	}
 
-	transation.Commit()
+	transaction.Commit()
 	return tenantModel, nil
 }
 
@@ -54,10 +65,10 @@ func (tenantModel *TenantModel) Update() (*TenantModel, error) {
 	transaction := databaseManager.Connect().Begin()
 
 	if transaction.Error != nil {
-		return &TenantModel{}, transaction.Error
+		return nil, transaction.Error
 	}
 
-	err := transaction.Model(&tenantModel).Update(TenantModel{Name: tenantModel.Name, Uuid: tenantModel.Uuid}).Error
+	err := transaction.Model(&tenantModel).Update(&tenantModel).Error
 	if err != nil {
 		transaction.Rollback()
 		return nil, err
@@ -68,10 +79,7 @@ func (tenantModel *TenantModel) Update() (*TenantModel, error) {
 }
 
 func (tenantModel *TenantModel) GetOne() (*TenantModel, error) {
-	err := databaseManager.Connect().First(&tenantModel).Error
-	if err != nil {
-		return nil, err
-	}
+	err := databaseManager.Connect().Where(&TenantModel{Uuid: tenantModel.Uuid}).First(&tenantModel).Error
 
 	if gorm.IsRecordNotFoundError(err) {
 		return nil, errors.New("tenant not found in database")
@@ -81,18 +89,25 @@ func (tenantModel *TenantModel) GetOne() (*TenantModel, error) {
 }
 
 func (tenantModel *TenantModel) Delete() (bool, error) {
+	err := databaseManager.Connect().Where(&TenantModel{Uuid: tenantModel.Uuid}).First(&tenantModel).Error
+
+	if gorm.IsRecordNotFoundError(err) {
+		return false, nil
+	}
+
 	transaction := databaseManager.Connect().Begin()
 
 	if transaction.Error != nil {
 		return false, transaction.Error
 	}
 
-	err := transaction.First(&tenantModel).Unscoped().Delete(&tenantModel).Error
+	err = transaction.Unscoped().Model(&tenantModel).Delete(&tenantModel).Error
 	if err != nil {
 		transaction.Rollback()
 		return false, err
 	}
 
 	transaction.Commit()
+
 	return true, nil
 }
