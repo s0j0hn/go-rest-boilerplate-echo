@@ -19,17 +19,29 @@ type (
 		ID   libUuid.UUID `json:"id" form:"id" validate:"required"`
 		Name string       `json:"name" form:"name" validate:"required"`
 	}
+
+	errorResult struct {
+		Message string `json:"message" comment:"Something went wrong"`
+	}
 )
 
 func CreateHandler(tenant tenantModel.TenantModel) *handler {
 	return &handler{tenant}
 }
 
+// GetAll godoc
+// @Summary List tenants
+// @Description get tenants
+// @Accept  json
+// @Produce  json
+// @Success 200 {array} handlers.resultJson
+// @Failure 500 {object} handlers.errorResult
+// @Router /tenants [get]
 func (h handler) GetAll(c echo.Context) error {
 	tenants, err := h.tenantModel.GetAll()
 	if err != nil {
 		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusInternalServerError, err.Error())
+		return c.JSON(http.StatusInternalServerError, errorResult{Message: err.Error()})
 	}
 
 	var results []resultJson

@@ -48,4 +48,5 @@ code_coverage:
 build:
   stage: build
   script:
+    - go get -u github.com/swaggo/swag/cmd/swag
     - make build
