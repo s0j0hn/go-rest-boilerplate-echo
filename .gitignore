@@ -34,4 +34,5 @@ glide.lock
 tmp/runner-build
 config.yaml
 dist/*
-docs/*
+docs/swagger.json
+docs/swagger.yaml
