@@ -51,7 +51,7 @@ func seedTenants() error {
 		},
 	}
 
-	for i, _ := range tenants {
+	for i := range tenants {
 		tenant, err := tenants[i].Save()
 		if err != nil {
 			return err

@@ -30,11 +30,11 @@ unit_tests:
 #  script:
 #    - make race
 #
-memory_sanitizer:
-  stage: test
-  script:
-    - uname -r; echo $(gcc -v 2>&1 | grep version); echo $(clang -v 2>&1 | grep version); go version
-    - make msan
+#memory_sanitizer:
+#  stage: test
+#  script:
+#    - uname -r; echo $(gcc -v 2>&1 | grep version); echo $(clang -v 2>&1 | grep version); go version
+#    - make msan
 
 code_coverage:
   stage: test
