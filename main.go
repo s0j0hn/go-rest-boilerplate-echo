@@ -16,6 +16,7 @@ import (
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/policy"
 	"golang.org/x/crypto/acme/autocert"
 	"gopkg.in/go-playground/validator.v9"
+	"net/http"
 	"os"
 
 	"log"
@@ -78,11 +79,14 @@ func createTenantPolicies(policyEnforcer *casbin.Enforcer) {
 func main() {
 
 	echoServer := echo.New()
+	echoServer.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: "method=${method}  uri=${uri}  status=${status}\n",
+	}))
+
 
 	echoServer.Validator = &CustomValidator{validator: validator.New()}
 
 	echoServer.Use(middleware.Recover())
-	echoServer.Use(middleware.Logger())
 	echoServer.Use(middleware.Secure())
 
 	gormClient := database.Connect()
@@ -111,6 +115,12 @@ func main() {
 
 	docs.SwaggerInfo.Host = config.GetAddress()
 	echoServer.GET("/swagger/*", echoSwagger.WrapHandler)
+
+	echoServer.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPost, http.MethodDelete},
+	}))
+
 
 	if config.IsProd() {
 		echoServer.AutoTLSManager.Cache = autocert.DirCache("./.cache")
