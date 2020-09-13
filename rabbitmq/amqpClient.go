@@ -11,6 +11,7 @@ var once sync.Once
 
 var Client *amqp.Connection
 var Queue amqp.Queue
+var Channel *amqp.Channel
 
 func Connect() *amqp.Connection {
 	once.Do(func() {
@@ -58,5 +59,11 @@ func CreateDefaultQueue() {
 		log.Fatal("Error declaring AMQP QoS:", err)
 	}
 
+	err = channel.Confirm(true)
+	if err != nil {
+		panic(err)
+	}
+
+	Channel = channel
 	Queue = queue
 }
