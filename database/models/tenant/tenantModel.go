@@ -10,7 +10,7 @@ import (
 type TenantModel struct {
 	gorm.Model
 	Uuid libUuid.UUID `gorm:"unique_index;not null"`
-	Name string       `gorm:"unique;not null"`
+	Name string       `gorm:"unique;not null;type:varchar(100);default:null"`
 }
 
 func (TenantModel) TableName() string {
@@ -18,21 +18,10 @@ func (TenantModel) TableName() string {
 }
 
 func (tenantModel *TenantModel) BeforeCreate(scope *gorm.Scope) error {
-	if len(tenantModel.Name) == 0 {
-		return errors.New("name can't be empty")
-	}
-
 	if tenantModel.Uuid.String() == "00000000-0000-0000-0000-000000000000" {
 		return scope.SetColumn("Uuid", libUuid.New())
 	}
 	return scope.SetColumn("Uuid", tenantModel.Uuid)
-}
-
-func (tenantModel *TenantModel) BeforeSave(scope *gorm.Scope) error {
-	if len(tenantModel.Name) == 0 {
-		return errors.New("name can't be empty")
-	}
-	return nil
 }
 
 func (tenantModel *TenantModel) GetAll() (*[]TenantModel, error) {
@@ -89,11 +78,13 @@ func (tenantModel *TenantModel) GetOne() (*TenantModel, error) {
 }
 
 func (tenantModel *TenantModel) Delete() (bool, error) {
+	libUuid.MustParse(tenantModel.Uuid.String())
+
 	if tenantModel.Uuid.String() == "00000000-0000-0000-0000-000000000000" {
 		return false, errors.New("no uuid specified")
 	}
 
-	err := databaseManager.Connect().Where(&TenantModel{Uuid: tenantModel.Uuid}).First(&tenantModel).Error
+	err := databaseManager.Connect().First(&tenantModel).Where(&TenantModel{Uuid: tenantModel.Uuid}).Error
 
 	if gorm.IsRecordNotFoundError(err) {
 		return false, nil

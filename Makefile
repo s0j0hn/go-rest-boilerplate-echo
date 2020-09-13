@@ -42,3 +42,8 @@ coverage:
 serve: swagger build
 	@echo SERVING...
 	@./dist/server
+
+update-docker:
+	@echo CREATING IMAGE AND PUSHING INTO GITLAB...
+	@docker build -t registry.gitlab.com/s0j0hn/go-rest-boilerplate-echo .
+	@docker push registry.gitlab.com/s0j0hn/go-rest-boilerplate-echo

@@ -58,7 +58,7 @@ func createTenantPolicies(policyEnforcer *casbin.Enforcer) {
 	policy.AddGetPolicy(policyEnforcer, "guest", "/tenants")
 	policy.AddCreatePolicy(policyEnforcer, "guest", "/tenants")
 	policy.AddUpdatePolicy(policyEnforcer, "guest", "/tenants")
-	policy.AddDeletePolicy(policyEnforcer, "guest", "/tenants")
+	// policy.AddDeletePolicy(policyEnforcer, "guest", "/tenants")
 }
 
 
