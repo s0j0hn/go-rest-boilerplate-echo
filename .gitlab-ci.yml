@@ -21,6 +21,7 @@ before_script:
 
 unit_tests:
   stage: test
+  retry: 2
   script:
     - make test
 
