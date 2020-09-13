@@ -1,5 +1,4 @@
-#image: registry.gitlab.com/s0j0hn/go-rest-boilerplate-echo:latest
-image: golang:1.15-alpine
+image: registry.gitlab.com/s0j0hn/go-rest-boilerplate-echo:latest
 
 cache:
   paths:
