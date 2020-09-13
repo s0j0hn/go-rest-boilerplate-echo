@@ -19,9 +19,13 @@ swagger:
 	@echo GENERATING SWAGGER...
 	@swag init
 
-postgres:
-	@echo GENERATING CODE...
-	@docker stack deploy --compose-file docker-compose.yml postgres
+start-services:
+	@echo STARTING DOCKER SERVICES...
+	@docker stack deploy --compose-file docker-compose.yml goboilerplate
+
+stop-services:
+	@echo STOPING DOCKER SERVICES...
+	@docker stack rm goboilerplate
 
 test:
 	@echo UNIT TESTING...

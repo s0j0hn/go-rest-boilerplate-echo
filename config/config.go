@@ -36,3 +36,13 @@ func GetDataBaseAccess() string {
 	)
 	return connection
 }
+
+func GetRabbitMQAccess() string {
+	v := getViper()
+	connection := fmt.Sprintf("amqp://%s:%s@%s/",
+		v.Get("rabbitmq.user"),
+		v.Get("rabbitmq.password"),
+		v.Get("rabbitmq.host"),
+	)
+	return connection
+}
