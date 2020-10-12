@@ -2,10 +2,9 @@ package tenantModel
 
 import (
 	libUuid "github.com/google/uuid"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/database"
+	"gorm.io/gorm"
 	"log"
 	"os"
 	"testing"
@@ -25,18 +24,14 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func refreshTenantTable() error {
-	err := DbClient.DropTableIfExists(&TenantModel{}).Error
+func refreshTenantTable() (err error) {
+	err = DbClient.Exec("DROP TABLE IF EXISTS tenants").Error
 	if err != nil {
 		log.Fatalf("Cannot refresh tenant table: %v", err)
 		return err
 	}
 
-	err = DbClient.AutoMigrate(&TenantModel{}).Error
-	if err != nil {
-		log.Fatalf("Cannot automigrate tenant table: %v", err)
-		return err
-	}
+	DbClient.AutoMigrate(&TenantModel{})
 
 	return nil
 }

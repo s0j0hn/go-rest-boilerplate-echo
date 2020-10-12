@@ -2,13 +2,13 @@ package handlers
 
 import (
 	libUuid "github.com/google/uuid"
-	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/database"
 	tenantModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/database/models/tenant"
 	"gopkg.in/go-playground/validator.v9"
+	"gorm.io/gorm"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -47,17 +47,13 @@ func TestMain(m *testing.M) {
 }
 
 func refreshTenantTable(t *testing.T) {
-	err := DbClient.DropTableIfExists(&tenantModel.TenantModel{}).Error
+	err := DbClient.Exec("DROP TABLE IF EXISTS tenants").Error
 	if err != nil {
 		t.Errorf("Error drop tenants handler: %v\n", err)
 		return
 	}
 
-	err = DbClient.AutoMigrate(&tenantModel.TenantModel{}).Error
-	if err != nil {
-		t.Errorf("Error automigrate tenants handler: %v\n", err)
-		return
-	}
+	DbClient.AutoMigrate(&tenantModel.TenantModel{})
 }
 
 func TestCreateTenant(t *testing.T) {

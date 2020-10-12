@@ -19,14 +19,12 @@ services:
     networks:
       - local
   postgres:
-    image: postgres
+    image: 'postgres:13-alpine'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-boilerplate}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-boilerplate}
       POSTGRES_DB: ${POSTGRES_DB:-boilerplate}
       PGDATA: /data/postgres
-    volumes:
-      - postgres:/data/postgres
     ports:
       - "5432:5432"
     networks:

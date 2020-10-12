@@ -3,8 +3,8 @@ package tenantModel
 import (
 	"errors"
 	libUuid "github.com/google/uuid"
-	"github.com/jinzhu/gorm"
 	databaseManager "gitlab.com/s0j0hn/go-rest-boilerplate-echo/database"
+	"gorm.io/gorm"
 )
 
 type TenantModel struct {
@@ -17,11 +17,15 @@ func (TenantModel) TableName() string {
 	return "tenant"
 }
 
-func (tenantModel *TenantModel) BeforeCreate(scope *gorm.Scope) error {
+func (tenantModel *TenantModel) BeforeCreate(ctx *gorm.DB) (err error) {
 	if tenantModel.Uuid.String() == "00000000-0000-0000-0000-000000000000" {
-		return scope.SetColumn("Uuid", libUuid.New())
+		err = ctx.Statement.Set("Uuid", libUuid.New()).Error
+		if err != nil {
+			return err
+		}
+		return
 	}
-	return scope.SetColumn("Uuid", tenantModel.Uuid)
+	return
 }
 
 func (tenantModel *TenantModel) GetAll() (*[]TenantModel, error) {
@@ -57,7 +61,7 @@ func (tenantModel *TenantModel) Update() (*TenantModel, error) {
 		return nil, transaction.Error
 	}
 
-	err := transaction.Model(&tenantModel).Update(&tenantModel).Error
+	err := transaction.Model(&tenantModel).Updates(&tenantModel).Error
 	if err != nil {
 		transaction.Rollback()
 		return nil, err
@@ -70,7 +74,7 @@ func (tenantModel *TenantModel) Update() (*TenantModel, error) {
 func (tenantModel *TenantModel) GetOne() (*TenantModel, error) {
 	err := databaseManager.Connect().Where(&TenantModel{Uuid: tenantModel.Uuid}).First(&tenantModel).Error
 
-	if gorm.IsRecordNotFoundError(err) {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errors.New("tenant not found in database")
 	}
 
@@ -86,7 +90,7 @@ func (tenantModel *TenantModel) Delete() (bool, error) {
 
 	err := databaseManager.Connect().First(&tenantModel).Where(&TenantModel{Uuid: tenantModel.Uuid}).Error
 
-	if gorm.IsRecordNotFoundError(err) {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return false, nil
 	}
 
