@@ -61,7 +61,7 @@ func (tenantModel *TenantModel) Update() (*TenantModel, error) {
 		return nil, transaction.Error
 	}
 
-	err := transaction.Model(&tenantModel).Updates(&tenantModel).Error
+	err := transaction.Model(&tenantModel).Where(TenantModel{ Uuid: tenantModel.Uuid }).Updates(&tenantModel).Error
 	if err != nil {
 		transaction.Rollback()
 		return nil, err

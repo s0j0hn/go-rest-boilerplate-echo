@@ -20,6 +20,11 @@ type (
 		Name string       `json:"name" form:"name" validate:"required"`
 	}
 
+	updateTenantData struct {
+		ID   libUuid.UUID `json:"id" form:"id" validate:"required"`
+		Name string       `json:"name" form:"name" validate:"required"`
+	}
+
 	errorResult struct {
 		Message string `json:"message" comment:"Something went wrong"`
 	}
@@ -141,7 +146,7 @@ func (h handler) Create(c echo.Context) error {
 // @Failure 500 {object} handlers.errorResult
 // @Router /tenants [put]
 func (h handler) Update(c echo.Context) error {
-	post := new(postTenantData)
+	post := new(updateTenantData)
 
 	if err := c.Bind(post); err != nil {
 		c.Logger().Error(err.Error())

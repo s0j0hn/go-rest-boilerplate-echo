@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	mockDBTenant             = tenantModel.TenantModel{}
+	mockDBTenant             = tenantModel.TenantModel{ Name: ""}
 	createTenantString       = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}`
 	createTenantStringName       = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b3e","name":"NAME"}`
 	allTenantsString         = `[{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}]`
@@ -97,7 +97,7 @@ func TestCreateTenant(t *testing.T) {
 	// Assertions
 	if assert.NoError(t, h.Create(c)) {
 		assert.Equal(t, http.StatusInternalServerError, rec.Code)
-		assert.Equal(t, "\"UNIQUE constraint failed: tenant.uuid\"\n", rec.Body.String())
+		assert.Equal(t, "\"UNIQUE constraint failed: tenant.name\"\n", rec.Body.String())
 	}
 
 	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(createTenantStringName))
@@ -233,7 +233,7 @@ func TestUpdateTenant(t *testing.T) {
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
-		assert.Equal(t, "\"Key: 'postTenantData.Name' Error:Field validation for 'Name' failed on the 'required' tag\"\n", rec.Body.String())
+		assert.Equal(t, "\"Key: 'updateTenantData.Name' Error:Field validation for 'Name' failed on the 'required' tag\"\n", rec.Body.String())
 	}
 
 	req = httptest.NewRequest(http.MethodPut, "/", strings.NewReader(updatedWrongTenantString3))
@@ -246,7 +246,7 @@ func TestUpdateTenant(t *testing.T) {
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
-		assert.Equal(t, "\"Key: 'postTenantData.ID' Error:Field validation for 'ID' failed on the 'required' tag\"\n", rec.Body.String())
+		assert.Equal(t, "\"Key: 'updateTenantData.ID' Error:Field validation for 'ID' failed on the 'required' tag\"\n", rec.Body.String())
 	}
 }
 
