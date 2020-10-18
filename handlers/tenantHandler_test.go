@@ -128,7 +128,7 @@ func TestGetTenant(t *testing.T) {
 	h := &handler{mockDBTenant}
 
 	// Assertions
-	if assert.NoError(t, h.GetOneById(c)) {
+	if assert.NoError(t, h.GetOneByID(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 	}
 
@@ -142,7 +142,7 @@ func TestGetTenant(t *testing.T) {
 	h = &handler{mockDBTenant}
 
 	// Assertions
-	if assert.NoError(t, h.GetOneById(c)) {
+	if assert.NoError(t, h.GetOneByID(c)) {
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 		assert.Equal(t, "\"invalid UUID length: 4\"\n", rec.Body.String())
 	}
@@ -157,7 +157,7 @@ func TestGetTenant(t *testing.T) {
 	h = &handler{mockDBTenant}
 
 	// Assertions
-	if assert.NoError(t, h.GetOneById(c)) {
+	if assert.NoError(t, h.GetOneByID(c)) {
 		assert.Equal(t, http.StatusNotFound, rec.Code)
 		assert.Equal(t, "null\n", rec.Body.String())
 	}
@@ -269,7 +269,7 @@ func TestDeleteTenant(t *testing.T) {
 	h := &handler{mockDBTenant}
 
 	// Assertions
-	if assert.NoError(t, h.DeleteById(c)) {
+	if assert.NoError(t, h.DeleteByID(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, "true\n", rec.Body.String())
 	}
@@ -283,7 +283,7 @@ func TestDeleteTenant(t *testing.T) {
 	h = &handler{mockDBTenant}
 
 	// Assertions
-	if assert.NoError(t, h.DeleteById(c)) {
+	if assert.NoError(t, h.DeleteByID(c)) {
 		assert.Equal(t, http.StatusNotFound, rec.Code)
 		assert.Equal(t, "\"invalid UUID length: 4\"\n", rec.Body.String())
 	}
@@ -297,7 +297,7 @@ func TestDeleteTenant(t *testing.T) {
 	h = &handler{mockDBTenant}
 
 	// Assertions
-	if assert.NoError(t, h.DeleteById(c)) {
+	if assert.NoError(t, h.DeleteByID(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, "false\n", rec.Body.String())
 	}

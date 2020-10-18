@@ -1,4 +1,4 @@
-package database
+package rabbitmq
 
 import (
 	"github.com/streadway/amqp"
@@ -13,7 +13,7 @@ var Client *amqp.Connection
 var Queue amqp.Queue
 var Channel *amqp.Channel
 
-func Connect() *amqp.Connection {
+func Connect() {
 	once.Do(func() {
 		connection := config.GetRabbitMQAccess()
 		client, err := amqp.Dial(connection)
@@ -22,13 +22,9 @@ func Connect() *amqp.Connection {
 			log.Fatal("Error AMQP connect:", err)
 		}
 
-		defer client.Close()
-
 		Client = client
-		CreateDefaultQueue()
+		log.Println("We got a amqp client")
 	})
-
-	return Client
 }
 
 func CreateDefaultQueue() {
@@ -36,10 +32,9 @@ func CreateDefaultQueue() {
 	if err != nil {
 		log.Fatal("Error AMQP channel: ", err)
 	}
-	defer channel.Close()
 
 	queue, err := channel.QueueDeclare(
-		"task_queue", // name
+		"tasks_queue", // name
 		true,         // durable
 		false,        // delete when unused
 		false,        // exclusive
@@ -59,11 +54,11 @@ func CreateDefaultQueue() {
 		log.Fatal("Error declaring AMQP QoS:", err)
 	}
 
-	err = channel.Confirm(true)
+	err = channel.Confirm(false)
 	if err != nil {
 		panic(err)
 	}
 
-	Channel = channel
 	Queue = queue
+	Channel = channel
 }

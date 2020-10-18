@@ -1,4 +1,4 @@
-package database
+package rabbitmq
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 type Task struct {
 	Id libUuid.UUID `json:"id"`
 	Tags []string `json:"tags"`
-	Status []string `json:"status"`
+	Status string `json:"status"`
 	Progress float32 `json:"progress"`
 }
 
@@ -20,6 +20,8 @@ func taskToBytes(task Task) []byte {
 		log.Fatal(err)
 	}
 
+	log.Println(taskJson)
+
 	return taskJson
 }
 
@@ -27,7 +29,7 @@ func CreateNewTask(tags []string, status string) error  {
 	newTask := Task{
 		Id: libUuid.New(),
 		Tags: tags,
-		Status: []string{status},
+		Status: status,
 		Progress: .01,
 	}
 
@@ -42,13 +44,17 @@ func CreateNewTask(tags []string, status string) error  {
 			Body:         taskToBytes(newTask),
 		})
 
-	pubAck, pubNack := Channel.NotifyConfirm(make(chan uint64, 1), make(chan uint64, 1))
-	select {
-	case <-pubAck:
-		// fmt.Println("Ack")
-	case <-pubNack:
-		// fmt.Println("NAck")
+	if err != nil {
+		log.Fatalf("%s", err)
 	}
+
+	//pubAck, pubNack := Channel.NotifyConfirm(make(chan uint64, 1), make(chan uint64, 1))
+	//select {
+	//case <-pubAck:
+	//	log.Println("Ack")
+	//case <-pubNack:
+	//	log.Println("NAck")
+	//}
 
 
 	return err
