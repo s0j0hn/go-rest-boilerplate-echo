@@ -104,12 +104,19 @@ func (c *Client) connect(listenQueue, addr string) bool {
 		c.logger.Printf("failed to dial rabbitMQ server: %v", err)
 		return false
 	}
+
 	ch, err := conn.Channel()
 	if err != nil {
 		c.logger.Printf("failed connecting to channel: %v", err)
 		return false
 	}
-	ch.Confirm(false)
+
+	err = ch.Confirm(false)
+	if err != nil {
+		c.logger.Printf("failed to confirm channel: %v", err)
+		return false
+	}
+
 	_, err = ch.QueueDeclare(
 		listenQueue,
 		true,  // Durable
@@ -159,14 +166,17 @@ func (c *Client) Push(data []byte) error {
 	if !c.isConnected {
 		return errors.New("failed to push push: not connected")
 	}
+
 	for {
 		err := c.UnsafePush(data)
+
 		if err != nil {
 			if err == ErrDisconnected {
 				continue
 			}
 			return err
 		}
+
 		select {
 		case confirm := <-c.notifyConfirm:
 			if confirm.Ack {
@@ -185,6 +195,7 @@ func (c *Client) UnsafePush(data []byte) error {
 	if !c.isConnected {
 		return errors.New("client is not connected")
 	}
+
 	return c.channel.Publish(
 		"",     // Exchange
 		c.name, // Routing key
@@ -213,7 +224,7 @@ func (c *Client) Stream(cancelCtx context.Context) error {
 	var connectionDropped bool
 
 	for i := 1; i <= c.threads; i++ {
-		msgs, err := c.channel.Consume(
+		messages, err := c.channel.Consume(
 			c.listenQueue,
 			consumerName(i), // Consumer
 			false,           // Auto-Ack
@@ -232,12 +243,12 @@ func (c *Client) Stream(cancelCtx context.Context) error {
 				select {
 				case <-cancelCtx.Done():
 					return
-				case msg, ok := <-msgs:
+				case message, ok := <-messages:
 					if !ok {
 						connectionDropped = true
 						return
 					}
-					c.parseEvent(msg)
+					c.parseEvent(message)
 				}
 			}
 		}()
@@ -259,10 +270,11 @@ type event struct{
 }
 
 func (c *Client) parseEvent(msg amqp.Delivery) {
+	var evt event
+
 	l := c.logger.Log().Timestamp()
 	startTime := time.Now()
 
-	var evt event
 	err := json.Unmarshal(msg.Body, &evt)
 	if err != nil {
 		logAndNack(msg, l, startTime, "unmarshalling body: %s - %s", string(msg.Body), err.Error())
@@ -287,31 +299,41 @@ func (c *Client) parseEvent(msg amqp.Delivery) {
 	case "job1":
 		// Call an actual function
 	default:
-		msg.Reject(false)
-		return
-	}
-
-	if err != nil {
-		logAndNack(msg, l, startTime, err.Error())
+		err = msg.Reject(false)
+		if err != nil {
+			logAndNack(msg, l, startTime, err.Error())
+			return
+		}
 		return
 	}
 
 	l.Str("level", "info").Int64("took-ms", time.Since(startTime).Milliseconds()).Msgf("%s succeeded", evt.Job)
-	msg.Ack(false)
+
+	err = msg.Ack(false)
+	if err != nil {
+		logAndNack(msg, l, startTime, err.Error())
+		return
+	}
 }
 
-func logAndNack(msg amqp.Delivery, l *zerolog.Event, t time.Time, err string, args ...interface{}) {
-	msg.Nack(false, false)
-	l.Int64("took-ms", time.Since(t).Milliseconds()).Str("level", "error").Msg(fmt.Sprintf(err, args...))
+func logAndNack(msg amqp.Delivery, l *zerolog.Event, t time.Time, errorMessage string, args ...interface{}) {
+	err := msg.Nack(false, false)
+	if err != nil {
+		panic(err)
+		return
+	}
+	l.Int64("took-ms", time.Since(t).Milliseconds()).Str("level", "error").Msg(fmt.Sprintf(errorMessage, args...))
 }
 
 func (c *Client) Close() error {
 	if !c.isConnected {
 		return nil
 	}
+
 	c.alive = false
 	fmt.Println("Waiting for current messages to be processed...")
 	c.wg.Wait()
+
 	for i := 1; i <= c.threads; i++ {
 		fmt.Println("Closing consumer: ", i)
 		err := c.channel.Cancel(consumerName(i), false)
@@ -319,14 +341,17 @@ func (c *Client) Close() error {
 			return fmt.Errorf("error canceling consumer %s: %v", consumerName(i), err)
 		}
 	}
+
 	err := c.channel.Close()
 	if err != nil {
 		return err
 	}
+
 	err = c.connection.Close()
 	if err != nil {
 		return err
 	}
+
 	c.isConnected = false
 	fmt.Println("gracefully stopped rabbitMQ connection")
 	return nil
