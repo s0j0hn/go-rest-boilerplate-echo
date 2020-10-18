@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/streadway/amqp"
+	"log"
 	"os"
 	"runtime"
 	"sync"
@@ -79,6 +80,7 @@ func (c *Client) handleReconnect(listenQueue, addr string) {
 
 			select {
 			case <-c.done:
+
 				return
 			case <-time.After(reconnectDelay + time.Duration(retryCount)*time.Second):
 				c.logger.Printf("disconnected from rabbitMQ and failed to connect")
@@ -111,7 +113,7 @@ func (c *Client) connect(listenQueue, addr string) bool {
 		return false
 	}
 
-	err = ch.Confirm(false)
+	err = ch.Confirm(true)
 	if err != nil {
 		c.logger.Printf("failed to confirm channel: %v", err)
 		return false
@@ -164,7 +166,7 @@ func (c *Client) changeConnection(connection *amqp.Connection, channel *amqp.Cha
 // This will block until the server sends a confirm.
 func (c *Client) Push(data []byte) error {
 	if !c.isConnected {
-		return errors.New("failed to push push: not connected")
+		return errors.New("failed to push: not connected")
 	}
 
 	for {
@@ -182,7 +184,7 @@ func (c *Client) Push(data []byte) error {
 			if confirm.Ack {
 				return nil
 			}
-		case <-time.After(20000):
+		case <-time.After(2 * time.Nanosecond):
 		}
 	}
 }
@@ -192,8 +194,10 @@ func (c *Client) Push(data []byte) error {
 // No guarantees are provided for whether the server will
 // receive the message.
 func (c *Client) UnsafePush(data []byte) error {
+	log.Println(c.isConnected)
+
 	if !c.isConnected {
-		return errors.New("client is not connected")
+		return ErrDisconnected
 	}
 
 	return c.channel.Publish(
@@ -202,6 +206,7 @@ func (c *Client) UnsafePush(data []byte) error {
 		false,  // Mandatory
 		false,  // Immediate
 		amqp.Publishing{
+			DeliveryMode: amqp.Persistent,
 			ContentType: "text/plain",
 			Body:        data,
 		},

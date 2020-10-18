@@ -25,6 +25,17 @@ func taskToBytes(task Task) []byte {
 	return taskJson
 }
 
+func CreateNewTaskV2(tags []string, status string) []byte {
+	newTask := Task{
+		Id: libUuid.New(),
+		Tags: tags,
+		Status: status,
+		Progress: .01,
+	}
+
+	return taskToBytes(newTask)
+}
+
 func CreateNewTask(tags []string, status string) error  {
 	newTask := Task{
 		Id: libUuid.New(),
