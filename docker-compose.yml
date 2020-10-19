@@ -24,7 +24,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-boilerplate}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-boilerplate}
       POSTGRES_DB: ${POSTGRES_DB:-boilerplate}
-      PGDATA: /data/postgres
     ports:
       - "5432:5432"
     networks:

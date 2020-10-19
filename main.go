@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/casbin/casbin/v2"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/labstack/echo/v4"
@@ -19,10 +20,9 @@ import (
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/rabbitmq"
 	"golang.org/x/crypto/acme/autocert"
 	"gopkg.in/go-playground/validator.v9"
+	"log"
 	"net/http"
 	"os"
-
-	"log"
 )
 
 type (
@@ -110,7 +110,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	createTenantPolicies(policyEnforcer)
+	// createTenantPolicies(policyEnforcer)
 
 	tenantInstance := tenantModel.TenantModel{}
 	tenantHandlerInstance := tenantHandler.CreateHandler(tenantInstance)
@@ -134,10 +134,16 @@ func main() {
 	}))
 
 	sigs := make(chan os.Signal, 1)
-	clientV2 := V2.New("tasks_queue", "tasks_queue", config.GetRabbitMQAccess(), zerolog.Logger{}, sigs)
+	clientV2 := V2.New("listenqueue", "pushqueue", config.GetRabbitMQAccess(), zerolog.Logger{}, sigs)
+
+	go func() {
+		sig := <-sigs
+		fmt.Println()
+		fmt.Println(sig)
+	}()
 
 	taskBytes := rabbitmq.CreateNewTaskV2([]string{"test", "test2"}, "Status is OK")
-	err = clientV2.UnsafePush(taskBytes)
+	err = clientV2.Push(taskBytes)
 	if err != nil {
 		echoServer.Logger.Fatal(err)
 		os.Exit(1)

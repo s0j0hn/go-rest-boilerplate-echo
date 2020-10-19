@@ -25,7 +25,6 @@ const (
 
 // Client holds necessery information for rabbitMQ
 type Client struct {
-	name		  string
 	pushQueue     string
 	listenQueue   string
 	logger        zerolog.Logger
@@ -48,7 +47,7 @@ func New(listenQueue, pushQueue, addr string, l zerolog.Logger, done chan os.Sig
 	}
 
 	client := Client{
-		name:		  listenQueue,
+		listenQueue:  listenQueue,
 		logger:       l,
 		threads:      threads,
 		pushQueue:    pushQueue,
@@ -58,14 +57,14 @@ func New(listenQueue, pushQueue, addr string, l zerolog.Logger, done chan os.Sig
 	}
 	client.wg.Add(threads)
 
-	go client.handleReconnect(addr, listenQueue)
+	go client.handleReconnect(addr)
 
 	return &client
 }
 
 // handleReconnect will wait for a connection error on
 // notifyClose, and then continuously attempt to reconnect.
-func (c *Client) handleReconnect(listenQueue, addr string) {
+func (c *Client) handleReconnect(addr string) {
 	for c.alive {
 		var retryCount int
 		fmt.Printf("Attempting to connect to rabbitMQ: %s\n", addr)
@@ -73,7 +72,7 @@ func (c *Client) handleReconnect(listenQueue, addr string) {
 		c.isConnected = false
 		t := time.Now()
 
-		for !c.connect(listenQueue, addr) {
+		for !c.connect(addr) {
 			if !c.alive {
 				return
 			}
@@ -100,7 +99,7 @@ func (c *Client) handleReconnect(listenQueue, addr string) {
 
 // connect will make a single attempt to connect to
 // RabbitMq. It returns the success of the attempt.
-func (c *Client) connect(listenQueue, addr string) bool {
+func (c *Client) connect(addr string) bool {
 	conn, err := amqp.Dial(addr)
 	if err != nil {
 		c.logger.Printf("failed to dial rabbitMQ server: %v", err)
@@ -120,7 +119,7 @@ func (c *Client) connect(listenQueue, addr string) bool {
 	}
 
 	_, err = ch.QueueDeclare(
-		listenQueue,
+		c.listenQueue,
 		true,  // Durable
 		false, // Delete when unused
 		false, // Exclusive
@@ -202,7 +201,7 @@ func (c *Client) UnsafePush(data []byte) error {
 
 	return c.channel.Publish(
 		"",     // Exchange
-		c.name, // Routing key
+		c.listenQueue, // Routing key
 		false,  // Mandatory
 		false,  // Immediate
 		amqp.Publishing{
