@@ -1,14 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"github.com/casbin/casbin/v2"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/swaggo/echo-swagger"
-	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/V2"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/config"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/database"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/database/migrate"
@@ -20,7 +18,6 @@ import (
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/rabbitmq"
 	"golang.org/x/crypto/acme/autocert"
 	"gopkg.in/go-playground/validator.v9"
-	"log"
 	"net/http"
 	"os"
 )
@@ -46,7 +43,6 @@ func (e *PolicyEnforcer) checkPolicyAccessGuests(next echo.HandlerFunc) echo.Han
 
 		isGood, err := e.enforcer.Enforce(user, path, method)
 		if err != nil {
-			log.Fatal(err)
 			return echo.ErrForbidden
 		}
 
@@ -91,15 +87,6 @@ func main() {
 	echoServer.Use(middleware.Recover())
 	echoServer.Use(middleware.Secure())
 
-	// AMQP.
-	//amqpClient.Connect()
-	//amqpClient.CreateDefaultQueue()
-	//err := amqpClient.CreateNewTask([]string{"test", "test2"}, "Status is OK")
-	//if err != nil {
-	//	echoServer.Logger.Fatal(err)
-	//}
-
-
 	// Database.
 	gormClient := database.Connect()
 	migrate.MigrateDatabase()
@@ -133,17 +120,17 @@ func main() {
 		AllowMethods: []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPost, http.MethodDelete},
 	}))
 
-	sigs := make(chan os.Signal, 1)
-	clientV2 := V2.New("listenqueue", "pushqueue", config.GetRabbitMQAccess(), zerolog.Logger{}, sigs)
-
-	go func() {
-		sig := <-sigs
-		fmt.Println()
-		fmt.Println(sig)
-	}()
+	goChan := make(chan os.Signal, 1)
+	rabbitMQClient := rabbitmq.NewAMQPClient("listenqueue", "pushqueue", config.GetRabbitMQAccess(), log.Logger, goChan)
+	taskManager := rabbitmq.NewTaskManagerClient(rabbitMQClient)
 
 	taskBytes := rabbitmq.CreateNewTaskV2([]string{"test", "test2"}, "Status is OK")
-	err = clientV2.Push(taskBytes)
+	err = taskManager.PushNewTask(taskBytes)
+	if err != nil {
+		echoServer.Logger.Fatal(err)
+	}
+
+	err = rabbitMQClient.Close()
 	if err != nil {
 		echoServer.Logger.Fatal(err)
 		os.Exit(1)

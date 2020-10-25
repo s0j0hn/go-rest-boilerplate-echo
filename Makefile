@@ -4,7 +4,7 @@ PKG := "gitlab.com/s0j0hn/$(PROJECT_NAME)"
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/)
 GO_FILES := $(shell find . -name '*.go' | grep -v /vendor/ | grep -v _test.go)
 
-all:test build
+all:build test serve
 	@echo DONE!
 
 dep:
