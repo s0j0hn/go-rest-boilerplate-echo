@@ -6,7 +6,8 @@ import (
 	"log"
 )
 
-type task struct {
+// Task is a task info description.
+type Task struct {
 	ID          libUuid.UUID `json:"id"`
 	Description string       `json:"description"`
 	Tags        []string     `json:"tags"`
@@ -14,12 +15,12 @@ type task struct {
 	Progress    float32      `json:"progress"`
 }
 
-// TaskClient is a task manager.
+// TaskClient is a Task manager.
 type TaskClient struct {
 	amqpClient *AMQPClient
 }
 
-// NewTaskManagerClient is used to create the task manager client.
+// NewTaskManagerClient is used to create the Task manager client.
 func NewTaskManagerClient(client *AMQPClient) *TaskClient {
 	taskManagerClient := TaskClient{
 		amqpClient: client,
@@ -28,7 +29,7 @@ func NewTaskManagerClient(client *AMQPClient) *TaskClient {
 	return &taskManagerClient
 }
 
-func taskToBytes(task task) []byte {
+func taskToBytes(task Task) []byte {
 	taskJSON, err := json.Marshal(task)
 	if err != nil {
 		log.Fatal(err)
@@ -39,9 +40,9 @@ func taskToBytes(task task) []byte {
 	return taskJSON
 }
 
-// CreateNewTask is used to create a new task into bytes.
+// CreateNewTask is used to create a new Task into bytes.
 func CreateNewTask(tags []string, status string) []byte {
-	newTask := task{
+	newTask := Task{
 		ID:       libUuid.New(),
 		Tags:     tags,
 		Status:   status,

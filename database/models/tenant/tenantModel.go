@@ -1,4 +1,4 @@
-package tenantmodel
+package tenantModel
 
 import (
 	"errors"
@@ -58,6 +58,7 @@ func (tenantModel *TenantModel) Save() (*TenantModel, error) {
 	transaction.Commit()
 	return tenantModel, nil
 }
+
 // Update is used to write data into database.
 func (tenantModel *TenantModel) Update() (*TenantModel, error) {
 	transaction := databaseManager.Connect().Begin()

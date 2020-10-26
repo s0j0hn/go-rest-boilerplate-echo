@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	libUuid "github.com/google/uuid"
+	libUUID "github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	tenantModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/database/models/tenant"
 	"net/http"
@@ -14,17 +14,17 @@ type (
 	}
 
 	resultJSON struct {
-		ID   libUuid.UUID `json:"id" form:"id" validate:"required"`
+		ID   libUUID.UUID `json:"id" form:"id" validate:"required"`
 		Name string       `json:"name" form:"name" validate:"required"`
 	}
 
 	postTenantData struct {
-		ID   libUuid.UUID `json:"id" form:"id" validate:"required"`
+		ID   libUUID.UUID `json:"id" form:"id" validate:"required"`
 		Name string       `json:"name" form:"name" validate:"required"`
 	}
 
 	updateTenantData struct {
-		ID   libUuid.UUID `json:"id" form:"id" validate:"required"`
+		ID   libUUID.UUID `json:"id" form:"id" validate:"required"`
 		Name string       `json:"name" form:"name" validate:"required"`
 	}
 
@@ -56,7 +56,7 @@ func (h Handler) GetAll(c echo.Context) error {
 
 	var results []resultJSON
 	for _, tenant := range *tenants {
-		results = append(results, resultJSON{ID: tenant.Uuid, Name: tenant.Name})
+		results = append(results, resultJSON{ID: tenant.UUID, Name: tenant.Name})
 	}
 
 	if len(results) == 0 {
@@ -80,13 +80,13 @@ func (h Handler) GetAll(c echo.Context) error {
 // @Failure 404 {object} handlers.errorResult
 // @Router /tenants/{id} [get]
 func (h Handler) GetOneByID(c echo.Context) error {
-	tenantID, err := libUuid.Parse(c.Param("id"))
+	tenantID, err := libUUID.Parse(c.Param("id"))
 	if err != nil {
 		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	h.tenantModel.Uuid = tenantID
+	h.tenantModel.UUID = tenantID
 
 	tenant, err := h.tenantModel.GetOne()
 	if err != nil {
@@ -95,7 +95,7 @@ func (h Handler) GetOneByID(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, &resultJSON{
-		ID:   tenant.Uuid,
+		ID:   tenant.UUID,
 		Name: tenant.Name,
 	})
 }
@@ -123,7 +123,7 @@ func (h Handler) Create(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	h.tenantModel.Uuid = post.ID
+	h.tenantModel.UUID = post.ID
 	h.tenantModel.Name = post.Name
 
 	tenant, err := h.tenantModel.Save()
@@ -133,7 +133,7 @@ func (h Handler) Create(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, resultJSON{
-		ID:   tenant.Uuid,
+		ID:   tenant.UUID,
 		Name: tenant.Name,
 	})
 }
@@ -162,7 +162,7 @@ func (h Handler) Update(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	h.tenantModel.Uuid = post.ID
+	h.tenantModel.UUID = post.ID
 	h.tenantModel.Name = post.Name
 
 	tenant, err := h.tenantModel.Update()
@@ -172,7 +172,7 @@ func (h Handler) Update(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, resultJSON{
-		ID:   tenant.Uuid,
+		ID:   tenant.UUID,
 		Name: tenant.Name,
 	})
 }
@@ -188,13 +188,13 @@ func (h Handler) Update(c echo.Context) error {
 // @Failure 404 {object} handlers.errorResult
 // @Router /tenants/{id} [delete]
 func (h Handler) DeleteByID(c echo.Context) error {
-	tenantID, err := libUuid.Parse(c.Param("id"))
+	tenantID, err := libUUID.Parse(c.Param("id"))
 	if err != nil {
 		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusNotFound, err.Error())
 	}
 
-	h.tenantModel.Uuid = tenantID
+	h.tenantModel.UUID = tenantID
 
 	isDeleted, err := h.tenantModel.Delete()
 	if err != nil {

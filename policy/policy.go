@@ -90,6 +90,7 @@ func AddGetPolicy(policyEnforcer *casbin.Enforcer, user string, url string) {
 
 	AddGetByIDPolicy(policyEnforcer, user, url+"/:id")
 }
+
 // AddGetByIDPolicy is used to add policy for specified user.
 func AddGetByIDPolicy(policyEnforcer *casbin.Enforcer, user string, url string) {
 	isAdded, err := policyEnforcer.AddPolicy(user, url, "GET")

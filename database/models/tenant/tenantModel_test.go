@@ -1,4 +1,4 @@
-package tenantmodel
+package tenantModel
 
 import (
 	libUuid "github.com/google/uuid"

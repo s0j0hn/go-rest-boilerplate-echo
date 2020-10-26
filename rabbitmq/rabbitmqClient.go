@@ -275,7 +275,7 @@ func (c *AMQPClient) Stream(cancelCtx context.Context) error {
 }
 
 func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
-	var evt task
+	var evt Task
 
 	l := c.logger.Log().Timestamp()
 	startTime := time.Now()
