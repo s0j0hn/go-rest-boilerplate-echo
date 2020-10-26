@@ -45,6 +45,8 @@ github.com/casbin/casbin/v2 v2.13.1 h1:K2ChfTOlEgCd9H6J3efOCatqLPyBj2ZCKwyhVRq4X
 github.com/casbin/casbin/v2 v2.13.1/go.mod h1:XXtYGrs/0zlOsJMeRteEdVi/FsB0ph7KgNfjoCoJUD8=
 github.com/casbin/casbin/v2 v2.14.2 h1:j29dbpZsVBL7GsBdoSev4nME/24YOircZXRpfd3wAl0=
 github.com/casbin/casbin/v2 v2.14.2/go.mod h1:XXtYGrs/0zlOsJMeRteEdVi/FsB0ph7KgNfjoCoJUD8=
+github.com/casbin/casbin/v2 v2.15.0 h1:eUY/QPk+Ym3eouFv46k533Yuup/YkID7IHo+x72tOIM=
+github.com/casbin/casbin/v2 v2.15.0/go.mod h1:XXtYGrs/0zlOsJMeRteEdVi/FsB0ph7KgNfjoCoJUD8=
 github.com/casbin/gorm-adapter/v3 v3.0.3 h1:hXGl0MvyOgo7veI9L3PEGg1nrYZz46jVohsWJl6Ue4k=
 github.com/casbin/gorm-adapter/v3 v3.0.3/go.mod h1:mQI09sqvXfy5p6kZB5HBzZrgKWwxaJ4xMWpd5OGfHRY=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=

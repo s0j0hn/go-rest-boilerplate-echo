@@ -23,14 +23,17 @@ import (
 )
 
 type (
+	// CustomValidator of requests.
 	CustomValidator struct {
 		validator *validator.Validate
 	}
+	// PolicyEnforcer is casbin rules policy.
 	PolicyEnforcer struct {
 		enforcer *casbin.Enforcer
 	}
 )
 
+// Validate is just a init
 func (cv *CustomValidator) Validate(i interface{}) error {
 	return cv.validator.Struct(i)
 }
@@ -89,7 +92,7 @@ func main() {
 
 	// Database.
 	gormClient := database.Connect()
-	migrate.MigrateDatabase()
+	migrate.RunMigrateDatabase()
 
 	policyEnforcer, err := policy.InitPolicy(gormClient)
 	if err != nil {
@@ -124,7 +127,7 @@ func main() {
 	rabbitMQClient := rabbitmq.NewAMQPClient("listenqueue", "pushqueue", config.GetRabbitMQAccess(), log.Logger, goChan)
 	taskManager := rabbitmq.NewTaskManagerClient(rabbitMQClient)
 
-	taskBytes := rabbitmq.CreateNewTaskV2([]string{"test", "test2"}, "Status is OK")
+	taskBytes := rabbitmq.CreateNewTask([]string{"test", "test2"}, "Status is OK")
 	err = taskManager.PushNewTask(taskBytes)
 	if err != nil {
 		echoServer.Logger.Fatal(err)

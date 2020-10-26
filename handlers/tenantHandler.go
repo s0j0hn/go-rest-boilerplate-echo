@@ -8,13 +8,16 @@ import (
 )
 
 type (
-	handler struct {
+	// Handler is a default handler as there is no generics.
+	Handler struct {
 		tenantModel tenantModel.TenantModel
 	}
+
 	resultJSON struct {
 		ID   libUuid.UUID `json:"id" form:"id" validate:"required"`
 		Name string       `json:"name" form:"name" validate:"required"`
 	}
+
 	postTenantData struct {
 		ID   libUuid.UUID `json:"id" form:"id" validate:"required"`
 		Name string       `json:"name" form:"name" validate:"required"`
@@ -30,8 +33,9 @@ type (
 	}
 )
 
-func CreateHandler(tenant tenantModel.TenantModel) *handler {
-	return &handler{tenant}
+// CreateHandler is always in each Handler
+func CreateHandler(tenant tenantModel.TenantModel) *Handler {
+	return &Handler{tenant}
 }
 
 // GetAll godoc
@@ -43,7 +47,7 @@ func CreateHandler(tenant tenantModel.TenantModel) *handler {
 // @Success 200 {array} handlers.resultJSON
 // @Failure 500 {object} handlers.errorResult
 // @Router /tenants [get]
-func (h handler) GetAll(c echo.Context) error {
+func (h Handler) GetAll(c echo.Context) error {
 	tenants, err := h.tenantModel.GetAll()
 	if err != nil {
 		c.Logger().Error(err.Error())
@@ -70,12 +74,12 @@ func (h handler) GetAll(c echo.Context) error {
 // @ID get-tenant-by-id
 // @Accept  json
 // @Produce  json
-// @Param id path string true "Tenant Id"
+// @Param id path string true "Tenant ID"
 // @Success 200 {object} handlers.resultJSON
 // @Failure 400 {object} handlers.errorResult
 // @Failure 404 {object} handlers.errorResult
 // @Router /tenants/{id} [get]
-func (h handler) GetOneByID(c echo.Context) error {
+func (h Handler) GetOneByID(c echo.Context) error {
 	tenantID, err := libUuid.Parse(c.Param("id"))
 	if err != nil {
 		c.Logger().Error(err.Error())
@@ -107,7 +111,7 @@ func (h handler) GetOneByID(c echo.Context) error {
 // @Failure 400 {object} handlers.errorResult
 // @Failure 500 {object} handlers.errorResult
 // @Router /tenants [post]
-func (h handler) Create(c echo.Context) error {
+func (h Handler) Create(c echo.Context) error {
 	post := new(postTenantData)
 	if err := c.Bind(post); err != nil {
 		c.Logger().Error(err.Error())
@@ -145,7 +149,7 @@ func (h handler) Create(c echo.Context) error {
 // @Failure 400 {object} handlers.errorResult
 // @Failure 500 {object} handlers.errorResult
 // @Router /tenants [put]
-func (h handler) Update(c echo.Context) error {
+func (h Handler) Update(c echo.Context) error {
 	post := new(updateTenantData)
 
 	if err := c.Bind(post); err != nil {
@@ -179,11 +183,11 @@ func (h handler) Update(c echo.Context) error {
 // @Tags tenants
 // @ID delete-tenant-by-id
 // @Produce  json
-// @Param id path string true "Tenant Id"
+// @Param id path string true "Tenant ID"
 // @Success 200 {object} handlers.resultJSON
 // @Failure 404 {object} handlers.errorResult
 // @Router /tenants/{id} [delete]
-func (h handler) DeleteByID(c echo.Context) error {
+func (h Handler) DeleteByID(c echo.Context) error {
 	tenantID, err := libUuid.Parse(c.Param("id"))
 	if err != nil {
 		c.Logger().Error(err.Error())

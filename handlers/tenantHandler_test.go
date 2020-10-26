@@ -17,16 +17,16 @@ import (
 )
 
 var (
-	mockDBTenant             = tenantModel.TenantModel{ Name: ""}
-	createTenantString       = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}`
-	createTenantStringName       = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b3e","name":"NAME"}`
-	allTenantsString         = `[{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}]`
-	updatedTenantString      = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME2"}`
-	updatedWrongTenantString = `{"id":"yolo","name":"NAME2"}`
+	mockDBTenant              = tenantModel.TenantModel{ Name: ""}
+	createTenantString        = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}`
+	createTenantStringName    = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b3e","name":"NAME"}`
+	allTenantsString          = `[{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}]`
+	updatedTenantString       = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME2"}`
+	updatedWrongTenantString  = `{"id":"yolo","name":"NAME2"}`
 	updatedWrongTenantString2 = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":""}`
 	updatedWrongTenantString3 = `{"name":"TEST"}`
-	createWrongTenantString  = `{"id":"yolo","name":111}`
-	validTenantId		     = "39b0b2fc-749f-46f3-8960-453418e72b2e"
+	createWrongTenantString   = `{"id":"yolo","name":111}`
+	validTenantID             = "39b0b2fc-749f-46f3-8960-453418e72b2e"
 )
 
 type (
@@ -49,7 +49,7 @@ func TestMain(m *testing.M) {
 func refreshTenantTable(t *testing.T) {
 	err := DbClient.Exec("DROP TABLE IF EXISTS tenants").Error
 	if err != nil {
-		t.Errorf("Error drop tenants handler: %v\n", err)
+		t.Errorf("Error drop tenants Handler: %v\n", err)
 		return
 	}
 
@@ -66,7 +66,7 @@ func TestCreateTenant(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h := &handler{mockDBTenant}
+	h := &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Create(c)) {
@@ -79,7 +79,7 @@ func TestCreateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Create(c)) {
@@ -92,7 +92,7 @@ func TestCreateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Create(c)) {
@@ -105,7 +105,7 @@ func TestCreateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Create(c)) {
@@ -124,8 +124,8 @@ func TestGetTenant(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
-	c.SetParamValues(validTenantId)
-	h := &handler{mockDBTenant}
+	c.SetParamValues(validTenantID)
+	h := &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.GetOneByID(c)) {
@@ -139,7 +139,7 @@ func TestGetTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues("yolo")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.GetOneByID(c)) {
@@ -154,7 +154,7 @@ func TestGetTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues(libUuid.New().String())
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.GetOneByID(c)) {
@@ -171,7 +171,7 @@ func TestGetAllTenants(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h := &handler{mockDBTenant}
+	h := &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.GetAll(c)) {
@@ -189,7 +189,7 @@ func TestUpdateTenant(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h := &handler{mockDBTenant}
+	h := &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
@@ -202,7 +202,7 @@ func TestUpdateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
@@ -215,7 +215,7 @@ func TestUpdateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
@@ -228,7 +228,7 @@ func TestUpdateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
@@ -241,7 +241,7 @@ func TestUpdateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
@@ -265,8 +265,8 @@ func TestDeleteTenant(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
-	c.SetParamValues(validTenantId)
-	h := &handler{mockDBTenant}
+	c.SetParamValues(validTenantID)
+	h := &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.DeleteByID(c)) {
@@ -280,7 +280,7 @@ func TestDeleteTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues("yolo")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.DeleteByID(c)) {
@@ -294,7 +294,7 @@ func TestDeleteTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues(libUuid.New().String())
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.DeleteByID(c)) {
@@ -311,7 +311,7 @@ func TestGetAllNoTenants(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h := &handler{mockDBTenant}
+	h := &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.GetAll(c)) {

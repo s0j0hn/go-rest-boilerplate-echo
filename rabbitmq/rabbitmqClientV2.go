@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	ErrDisconnected = errors.New("disconnected from rabbitmq, trying to reconnect")
+	errDisconnected = errors.New("disconnected from rabbitmq, trying to reconnect")
 )
 
 const (
@@ -172,14 +172,14 @@ func (c *AMQPClient) changeConnection(connection *amqp.Connection, channel *amqp
 // This will block until the server sends a confirm.
 func (c *AMQPClient) Push(data []byte) error {
 	if !c.isConnected {
-		return ErrDisconnected
+		return errDisconnected
 	}
 
 	for {
 		err := c.UnsafePush(data)
 
 		if err != nil {
-			if err == ErrDisconnected {
+			if err == errDisconnected {
 				continue
 			}
 			return err
@@ -201,7 +201,7 @@ func (c *AMQPClient) Push(data []byte) error {
 // receive the message.
 func (c *AMQPClient) UnsafePush(data []byte) error {
 	if !c.isConnected {
-		return ErrDisconnected
+		return errDisconnected
 	}
 
 	return c.channel.Publish(
@@ -217,6 +217,7 @@ func (c *AMQPClient) UnsafePush(data []byte) error {
 	)
 }
 
+// Stream is used to listen on queue and parse the messages.
 func (c *AMQPClient) Stream(cancelCtx context.Context) error {
 	for {
 		if c.isConnected {
@@ -267,14 +268,14 @@ func (c *AMQPClient) Stream(cancelCtx context.Context) error {
 	c.wg.Wait()
 
 	if connectionDropped {
-		return ErrDisconnected
+		return errDisconnected
 	}
 
 	return nil
 }
 
 func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
-	var evt Task
+	var evt task
 
 	l := c.logger.Log().Timestamp()
 	startTime := time.Now()
@@ -322,6 +323,7 @@ func logAndNack(msg amqp.Delivery, l *zerolog.Event, t time.Time, errorMessage s
 	l.Int64("took-ms", time.Since(t).Milliseconds()).Str("level", "error").Msg(fmt.Sprintf(errorMessage, args...))
 }
 
+// Close is used to destroy all tcp connection to rabbitmq.
 func (c *AMQPClient) Close() error {
 	if !c.isConnected {
 		return nil

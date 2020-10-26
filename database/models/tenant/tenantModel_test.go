@@ -202,32 +202,6 @@ func TestUpdateTenant(t *testing.T) {
 	t.Log("End TestUpdateTenant")
 }
 
-//func TestUpdateWrongTenant(t *testing.T) {
-//	err := refreshTenantTable()
-//	if err != nil {
-//		t.Fatal(err)
-//		return
-//	}
-//
-//	seedOneTenant()
-//
-//	existingTenant := TenantModel{
-//		Uuid: libUuid.New(),
-//		Name: "Greg",
-//	}
-//
-//	transaction := database.Connect().Begin()
-//
-//	updatedTenant, err := existingTenant.Update()
-//
-//	if assert.Error(t, err) {
-//		assert.NoError(t, transaction.Error)
-//		assert.Equal(t, "NOT NULL constraint failed: tenant.name", err.Error())
-//		assert.Nil(t, updatedTenant)
-//		t.Log("End TestUpdateWrongTenant")
-//	}
-//}
-
 func TestDeleteTenant(t *testing.T) {
 	err := refreshTenantTable()
 	if err != nil {
