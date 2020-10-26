@@ -225,7 +225,6 @@ func TestDeleteTenant(t *testing.T) {
 		t.Log("End TestDeleteTenant")
 	}
 
-
 	//err = refreshTenantTable()
 	//if err != nil {
 	//	t.Fatal(err)

@@ -45,12 +45,12 @@ func NewAMQPClient(listenQueue, pushQueue, addr string, l zerolog.Logger, goChan
 	}
 
 	client := AMQPClient{
-		listenQueue:   listenQueue,
-		logger:        l,
-		threads:       threads,
-		pushQueue:     pushQueue,
-		alive:         true,
-		wg:            &sync.WaitGroup{},
+		listenQueue: listenQueue,
+		logger:      l,
+		threads:     threads,
+		pushQueue:   pushQueue,
+		alive:       true,
+		wg:          &sync.WaitGroup{},
 	}
 
 	client.wg.Add(threads)
@@ -77,12 +77,12 @@ func (c *AMQPClient) handleReconnect(addr string, clientChannel chan os.Signal) 
 			}
 
 			select {
-				case <-clientChannel:
-					c.logger.Printf("Recieved something into clinet channel")
-					return
-				case <-time.After(reconnectDelay + time.Duration(retryCount)*time.Second):
-					fmt.Printf("disconnected from rabbitMQ and failed to connect")
-					retryCount++
+			case <-clientChannel:
+				c.logger.Printf("Recieved something into clinet channel")
+				return
+			case <-time.After(reconnectDelay + time.Duration(retryCount)*time.Second):
+				fmt.Printf("disconnected from rabbitMQ and failed to connect")
+				retryCount++
 			}
 		}
 
@@ -186,11 +186,11 @@ func (c *AMQPClient) Push(data []byte) error {
 		}
 
 		select {
-			case confirm := <-c.notifyConfirm:
-				if confirm.Ack {
-					return nil
-				}
-			case <-time.After(1 * time.Second):
+		case confirm := <-c.notifyConfirm:
+			if confirm.Ack {
+				return nil
+			}
+		case <-time.After(1 * time.Second):
 		}
 	}
 }
@@ -205,14 +205,14 @@ func (c *AMQPClient) UnsafePush(data []byte) error {
 	}
 
 	return c.channel.Publish(
-		"",     // Exchange
+		"",          // Exchange
 		c.pushQueue, // Routing key
-		false,  // Mandatory
-		false,  // Immediate
+		false,       // Mandatory
+		false,       // Immediate
 		amqp.Publishing{
 			DeliveryMode: amqp.Persistent,
-			ContentType: "text/plain",
-			Body:        data,
+			ContentType:  "text/plain",
+			Body:         data,
 		},
 	)
 }
@@ -292,17 +292,17 @@ func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
 	}
 
 	switch evt.Status {
-		case "running":
-			// Call an actual function
-		case "failed":
-			// Call in case of fail
-		default:
-			err = msg.Reject(false)
-			if err != nil {
-				logAndNack(msg, l, startTime, err.Error())
-				return
-			}
+	case "running":
+		// Call an actual function
+	case "failed":
+		// Call in case of fail
+	default:
+		err = msg.Reject(false)
+		if err != nil {
+			logAndNack(msg, l, startTime, err.Error())
 			return
+		}
+		return
 	}
 
 	l.Str("level", "info").Int64("took-ms", time.Since(startTime).Milliseconds()).Msgf("%s succeeded", evt.Status)
@@ -361,5 +361,3 @@ func (c *AMQPClient) Close() error {
 func consumerName(i int) string {
 	return fmt.Sprintf("go-consumer-%v", i)
 }
-
-

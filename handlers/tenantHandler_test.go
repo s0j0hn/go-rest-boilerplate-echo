@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	mockDBTenant              = tenantModel.TenantModel{ Name: ""}
+	mockDBTenant              = tenantModel.TenantModel{Name: ""}
 	createTenantString        = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}`
 	createTenantStringName    = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b3e","name":"NAME"}`
 	allTenantsString          = `[{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}]`

@@ -64,7 +64,6 @@ func createTenantPolicies(policyEnforcer *casbin.Enforcer) {
 	// policy.AddDeletePolicy(policyEnforcer, "guest", "/tenants")
 }
 
-
 // @title Swagger Boilerplate API
 // @version 1.0
 // @description This is a sample

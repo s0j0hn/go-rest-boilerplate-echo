@@ -52,7 +52,7 @@ func CreateNewTask(tags []string, status string) []byte {
 }
 
 // PushNewTask is used to push a taks into pushQueue.
-func (c *TaskClient) PushNewTask(task []byte) error  {
+func (c *TaskClient) PushNewTask(task []byte) error {
 	err := c.amqpClient.Push(task)
 	if err != nil {
 		return err

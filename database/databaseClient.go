@@ -18,7 +18,7 @@ var Client *gorm.DB
 func Connect() *gorm.DB {
 	once.Do(func() {
 		connection := config.GetDatabaseAccess()
-		client, err := gorm.Open(postgres.New(postgres.Config{ DSN: connection }), &gorm.Config{})
+		client, err := gorm.Open(postgres.New(postgres.Config{DSN: connection}), &gorm.Config{})
 
 		if err != nil {
 			log.Fatal("Error GORM connect:", err)
