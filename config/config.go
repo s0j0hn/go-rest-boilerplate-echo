@@ -18,21 +18,36 @@ func getViper() *viper.Viper {
 	return vp
 }
 
+// IsProd to get the env for prod or not.
 func IsProd() bool {
 	return getViper().Get("app") == "prod"
 }
 
+// GetAddress is used to get the webserver host to listen on.
 func GetAddress() string {
 	return getViper().Get("address").(string)
 }
 
-func GetDataBaseAccess() string {
+// GetDatabaseAccess is used to get the database credentials.
+func GetDatabaseAccess() string {
 	v := getViper()
-	connection := fmt.Sprintf("host=%s port=5432 user=%s password=%s dbname=%s sslmode=disable",
+	connection := fmt.Sprintf(
+		"host=%s port=5432 user=%s password=%s dbname=%s sslmode=disable",
 		v.Get("database.host"),
 		v.Get("database.user"),
 		v.Get("database.password"),
 		v.Get("database.name"),
+	)
+	return connection
+}
+
+// GetRabbitMQAccess is used to get the rabbitmq credentials.
+func GetRabbitMQAccess() string {
+	v := getViper()
+	connection := fmt.Sprintf("amqp://%s:%s@%s/",
+		v.Get("rabbitmq.user"),
+		v.Get("rabbitmq.password"),
+		v.Get("rabbitmq.host"),
 	)
 	return connection
 }

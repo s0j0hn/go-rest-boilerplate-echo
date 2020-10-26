@@ -5,7 +5,12 @@ import (
 	tenantModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/database/models/tenant"
 )
 
-func MigrateDatabase() {
+// RunMigrateDatabase is used to prepare for the database
+func RunMigrateDatabase() {
 	databaseClient := database.Connect()
-	databaseClient.AutoMigrate(&tenantModel.TenantModel{})
+	err := databaseClient.AutoMigrate(&tenantModel.TenantModel{})
+	if err != nil {
+		panic(err)
+	}
+
 }

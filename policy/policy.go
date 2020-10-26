@@ -4,12 +4,12 @@ import (
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/rbac/default-role-manager"
 	"github.com/casbin/casbin/v2/util"
-	"github.com/casbin/gorm-adapter/v2"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/jinzhu/gorm"
+	gormadapter "github.com/casbin/gorm-adapter/v3"
+	"gorm.io/gorm"
 	"log"
 )
 
+// InitPolicy is used to initialise all policy manager needs to function.
 func InitPolicy(gormClient *gorm.DB) (*casbin.Enforcer, error) {
 	// Initialize a Gorm adapter and use it in a Casbin enforcer:
 	// The adapter will use the MySQL database named "casbin".
@@ -53,6 +53,7 @@ func InitPolicy(gormClient *gorm.DB) (*casbin.Enforcer, error) {
 	return policyEnforcer, nil
 }
 
+// AddCreatePolicy is used to add policy for specified user.
 func AddCreatePolicy(policyEnforcer *casbin.Enforcer, user string, url string) {
 	isAdded, err := policyEnforcer.AddPolicy(user, url, "POST")
 	if err != nil {
@@ -61,6 +62,7 @@ func AddCreatePolicy(policyEnforcer *casbin.Enforcer, user string, url string) {
 	log.Printf("Added policy create with result: %t", isAdded)
 }
 
+// AddUpdatePolicy is used to add policy for specified user.
 func AddUpdatePolicy(policyEnforcer *casbin.Enforcer, user string, url string) {
 	isAdded, err := policyEnforcer.AddPolicy(user, url, "PUT")
 	if err != nil {
@@ -69,6 +71,7 @@ func AddUpdatePolicy(policyEnforcer *casbin.Enforcer, user string, url string) {
 	log.Printf("Added policy update with result: %t", isAdded)
 }
 
+// AddDeletePolicy is used to add policy for specified user.
 func AddDeletePolicy(policyEnforcer *casbin.Enforcer, user string, url string) {
 	isAdded, err := policyEnforcer.AddPolicy(user, url+"/:id", "DELETE")
 	if err != nil {
@@ -77,6 +80,7 @@ func AddDeletePolicy(policyEnforcer *casbin.Enforcer, user string, url string) {
 	log.Printf("Added policy delete with result: %t", isAdded)
 }
 
+// AddGetPolicy is used to add policy for specified user.
 func AddGetPolicy(policyEnforcer *casbin.Enforcer, user string, url string) {
 	isAdded, err := policyEnforcer.AddPolicy(user, url, "GET")
 	if err != nil {
@@ -84,10 +88,11 @@ func AddGetPolicy(policyEnforcer *casbin.Enforcer, user string, url string) {
 	}
 	log.Printf("Added policy get with result: %t", isAdded)
 
-	AddGetByIdPolicy(policyEnforcer, user, url+"/:id")
+	AddGetByIDPolicy(policyEnforcer, user, url+"/:id")
 }
 
-func AddGetByIdPolicy(policyEnforcer *casbin.Enforcer, user string, url string) {
+// AddGetByIDPolicy is used to add policy for specified user.
+func AddGetByIDPolicy(policyEnforcer *casbin.Enforcer, user string, url string) {
 	isAdded, err := policyEnforcer.AddPolicy(user, url, "GET")
 	if err != nil {
 		log.Fatal(err)

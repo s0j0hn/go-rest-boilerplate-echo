@@ -2,13 +2,13 @@ package handlers
 
 import (
 	libUuid "github.com/google/uuid"
-	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/database"
 	tenantModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/database/models/tenant"
 	"gopkg.in/go-playground/validator.v9"
+	"gorm.io/gorm"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -17,16 +17,16 @@ import (
 )
 
 var (
-	mockDBTenant             = tenantModel.TenantModel{}
-	createTenantString       = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}`
-	createTenantStringName       = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b3e","name":"NAME"}`
-	allTenantsString         = `[{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}]`
-	updatedTenantString      = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME2"}`
-	updatedWrongTenantString = `{"id":"yolo","name":"NAME2"}`
+	mockDBTenant              = tenantModel.TenantModel{Name: ""}
+	createTenantString        = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}`
+	createTenantStringName    = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b3e","name":"NAME"}`
+	allTenantsString          = `[{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}]`
+	updatedTenantString       = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME2"}`
+	updatedWrongTenantString  = `{"id":"yolo","name":"NAME2"}`
 	updatedWrongTenantString2 = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":""}`
 	updatedWrongTenantString3 = `{"name":"TEST"}`
-	createWrongTenantString  = `{"id":"yolo","name":111}`
-	validTenantId		     = "39b0b2fc-749f-46f3-8960-453418e72b2e"
+	createWrongTenantString   = `{"id":"yolo","name":111}`
+	validTenantID             = "39b0b2fc-749f-46f3-8960-453418e72b2e"
 )
 
 type (
@@ -47,17 +47,13 @@ func TestMain(m *testing.M) {
 }
 
 func refreshTenantTable(t *testing.T) {
-	err := DbClient.DropTableIfExists(&tenantModel.TenantModel{}).Error
+	err := DbClient.Exec("DROP TABLE IF EXISTS tenants").Error
 	if err != nil {
-		t.Errorf("Error drop tenants handler: %v\n", err)
+		t.Errorf("Error drop tenants Handler: %v\n", err)
 		return
 	}
 
-	err = DbClient.AutoMigrate(&tenantModel.TenantModel{}).Error
-	if err != nil {
-		t.Errorf("Error automigrate tenants handler: %v\n", err)
-		return
-	}
+	DbClient.AutoMigrate(&tenantModel.TenantModel{})
 }
 
 func TestCreateTenant(t *testing.T) {
@@ -70,7 +66,7 @@ func TestCreateTenant(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h := &handler{mockDBTenant}
+	h := &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Create(c)) {
@@ -83,7 +79,7 @@ func TestCreateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Create(c)) {
@@ -96,12 +92,12 @@ func TestCreateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Create(c)) {
 		assert.Equal(t, http.StatusInternalServerError, rec.Code)
-		assert.Equal(t, "\"UNIQUE constraint failed: tenant.uuid\"\n", rec.Body.String())
+		assert.Equal(t, "\"UNIQUE constraint failed: tenant.name\"\n", rec.Body.String())
 	}
 
 	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(createTenantStringName))
@@ -109,7 +105,7 @@ func TestCreateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Create(c)) {
@@ -128,11 +124,11 @@ func TestGetTenant(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
-	c.SetParamValues(validTenantId)
-	h := &handler{mockDBTenant}
+	c.SetParamValues(validTenantID)
+	h := &Handler{mockDBTenant}
 
 	// Assertions
-	if assert.NoError(t, h.GetOneById(c)) {
+	if assert.NoError(t, h.GetOneByID(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 	}
 
@@ -143,10 +139,10 @@ func TestGetTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues("yolo")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
-	if assert.NoError(t, h.GetOneById(c)) {
+	if assert.NoError(t, h.GetOneByID(c)) {
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 		assert.Equal(t, "\"invalid UUID length: 4\"\n", rec.Body.String())
 	}
@@ -158,10 +154,10 @@ func TestGetTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues(libUuid.New().String())
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
-	if assert.NoError(t, h.GetOneById(c)) {
+	if assert.NoError(t, h.GetOneByID(c)) {
 		assert.Equal(t, http.StatusNotFound, rec.Code)
 		assert.Equal(t, "null\n", rec.Body.String())
 	}
@@ -175,7 +171,7 @@ func TestGetAllTenants(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h := &handler{mockDBTenant}
+	h := &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.GetAll(c)) {
@@ -193,7 +189,7 @@ func TestUpdateTenant(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h := &handler{mockDBTenant}
+	h := &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
@@ -206,7 +202,7 @@ func TestUpdateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
@@ -219,7 +215,7 @@ func TestUpdateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
@@ -232,12 +228,12 @@ func TestUpdateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
-		assert.Equal(t, "\"Key: 'postTenantData.Name' Error:Field validation for 'Name' failed on the 'required' tag\"\n", rec.Body.String())
+		assert.Equal(t, "\"Key: 'updateTenantData.Name' Error:Field validation for 'Name' failed on the 'required' tag\"\n", rec.Body.String())
 	}
 
 	req = httptest.NewRequest(http.MethodPut, "/", strings.NewReader(updatedWrongTenantString3))
@@ -245,12 +241,12 @@ func TestUpdateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
-		assert.Equal(t, "\"Key: 'postTenantData.ID' Error:Field validation for 'ID' failed on the 'required' tag\"\n", rec.Body.String())
+		assert.Equal(t, "\"Key: 'updateTenantData.ID' Error:Field validation for 'ID' failed on the 'required' tag\"\n", rec.Body.String())
 	}
 }
 
@@ -269,11 +265,11 @@ func TestDeleteTenant(t *testing.T) {
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
-	c.SetParamValues(validTenantId)
-	h := &handler{mockDBTenant}
+	c.SetParamValues(validTenantID)
+	h := &Handler{mockDBTenant}
 
 	// Assertions
-	if assert.NoError(t, h.DeleteById(c)) {
+	if assert.NoError(t, h.DeleteByID(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, "true\n", rec.Body.String())
 	}
@@ -284,10 +280,10 @@ func TestDeleteTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues("yolo")
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
-	if assert.NoError(t, h.DeleteById(c)) {
+	if assert.NoError(t, h.DeleteByID(c)) {
 		assert.Equal(t, http.StatusNotFound, rec.Code)
 		assert.Equal(t, "\"invalid UUID length: 4\"\n", rec.Body.String())
 	}
@@ -298,10 +294,10 @@ func TestDeleteTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues(libUuid.New().String())
-	h = &handler{mockDBTenant}
+	h = &Handler{mockDBTenant}
 
 	// Assertions
-	if assert.NoError(t, h.DeleteById(c)) {
+	if assert.NoError(t, h.DeleteByID(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
 		assert.Equal(t, "false\n", rec.Body.String())
 	}
@@ -315,7 +311,7 @@ func TestGetAllNoTenants(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h := &handler{mockDBTenant}
+	h := &Handler{mockDBTenant}
 
 	// Assertions
 	if assert.NoError(t, h.GetAll(c)) {

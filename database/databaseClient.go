@@ -1,47 +1,44 @@
 package database
 
 import (
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/config"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 	"log"
 	"sync"
 )
 
 var once sync.Once
 
+// Client is gorm database client.
 var Client *gorm.DB
 
+// Connect is used to create the database client.
 func Connect() *gorm.DB {
 	once.Do(func() {
-		connection := config.GetDataBaseAccess()
-		client, err := gorm.Open(
-			"postgres",
-			connection,
-		)
+		connection := config.GetDatabaseAccess()
+		client, err := gorm.Open(postgres.New(postgres.Config{DSN: connection}), &gorm.Config{})
 
 		if err != nil {
 			log.Fatal("Error GORM connect:", err)
 		}
 
-		client.DB().SetMaxIdleConns(10)
-		client.DB().SetMaxOpenConns(20)
 		Client = client
 	})
 
 	return Client
 }
 
+// ConnectForTests is used to create mock database client in memory.
 func ConnectForTests() *gorm.DB {
 	once.Do(func() {
-		client, err := gorm.Open("sqlite3", ":memory:")
+		client, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 
 		if err != nil {
 			log.Fatal("Error GORM connect:", err)
 		}
 
-		client.DB().SetMaxIdleConns(10)
-		client.DB().SetMaxOpenConns(20)
 		Client = client
 	})
 

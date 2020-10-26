@@ -2,17 +2,16 @@ package tenantModel
 
 import (
 	libUuid "github.com/google/uuid"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/stretchr/testify/assert"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/database"
+	"gorm.io/gorm"
 	"log"
 	"os"
 	"testing"
 )
 
 var DbClient *gorm.DB
-var validTenantId = "6fcec554-9861-4965-bf7d-036be545a92e"
+var validTenantID = "6fcec554-9861-4965-bf7d-036be545a92e"
 
 func TestMain(m *testing.M) {
 	DbClient = database.ConnectForTests()
@@ -25,18 +24,14 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func refreshTenantTable() error {
-	err := DbClient.DropTableIfExists(&TenantModel{}).Error
+func refreshTenantTable() (err error) {
+	err = DbClient.Exec("DROP TABLE IF EXISTS tenants").Error
 	if err != nil {
 		log.Fatalf("Cannot refresh tenant table: %v", err)
 		return err
 	}
 
-	err = DbClient.AutoMigrate(&TenantModel{}).Error
-	if err != nil {
-		log.Fatalf("Cannot automigrate tenant table: %v", err)
-		return err
-	}
+	DbClient.AutoMigrate(&TenantModel{})
 
 	return nil
 }
@@ -56,7 +51,7 @@ func seedTenants() error {
 		if err != nil {
 			return err
 		}
-		log.Printf("Seed with Tenant ID: %s", tenant.Uuid)
+		log.Printf("Seed with Tenant ID: %s", tenant.UUID)
 	}
 	return nil
 }
@@ -70,7 +65,7 @@ func seedOneTenant() {
 
 	tenant := TenantModel{
 		Name: "Greg",
-		Uuid: libUuid.MustParse(validTenantId),
+		UUID: libUuid.MustParse(validTenantID),
 	}
 
 	tenantSaved, err := tenant.Save()
@@ -78,7 +73,7 @@ func seedOneTenant() {
 		log.Fatalf("Cannot seed tenant table: %v", err)
 		return
 	}
-	log.Printf("Seed with Tenant ID: %s", tenantSaved.Uuid)
+	log.Printf("Seed with Tenant ID: %s", tenantSaved.UUID)
 }
 
 func TestGetAllTenants(t *testing.T) {
@@ -112,7 +107,7 @@ func TestSaveTenant(t *testing.T) {
 	}
 
 	newUser := TenantModel{
-		Uuid: libUuid.New(),
+		UUID: libUuid.New(),
 		Name: "Test",
 	}
 
@@ -124,7 +119,7 @@ func TestSaveTenant(t *testing.T) {
 
 	assert.Equal(t, newUser.ID, savedUser.ID)
 	assert.Equal(t, newUser.Name, savedUser.Name)
-	assert.Equal(t, newUser.Uuid, savedUser.Uuid)
+	assert.Equal(t, newUser.UUID, savedUser.UUID)
 	t.Log("End TestSaveTenant")
 }
 
@@ -136,7 +131,7 @@ func TestWrongSaveTenant(t *testing.T) {
 	}
 
 	newUser := TenantModel{
-		Uuid: libUuid.New(),
+		UUID: libUuid.New(),
 		Name: "",
 	}
 
@@ -156,11 +151,11 @@ func TestGetTenantByID(t *testing.T) {
 	}
 
 	seedOneTenant()
-	tenantInstance := TenantModel{Uuid: libUuid.MustParse(validTenantId)}
+	tenantInstance := TenantModel{UUID: libUuid.MustParse(validTenantID)}
 
 	foundTenant, err := tenantInstance.GetOne()
 	assert.NoError(t, err)
-	assert.Equal(t, foundTenant.Uuid.String(), validTenantId)
+	assert.Equal(t, foundTenant.UUID.String(), validTenantID)
 	t.Log("End TestTenantGetById")
 }
 
@@ -172,7 +167,7 @@ func TestGetWrongTenantByID(t *testing.T) {
 	}
 
 	seedOneTenant()
-	tenantInstance := TenantModel{Uuid: libUuid.New()}
+	tenantInstance := TenantModel{UUID: libUuid.New()}
 
 	foundTenant, err := tenantInstance.GetOne()
 
@@ -192,7 +187,7 @@ func TestUpdateTenant(t *testing.T) {
 	seedOneTenant()
 
 	existingTenant := TenantModel{
-		Uuid: libUuid.MustParse(validTenantId),
+		UUID: libUuid.MustParse(validTenantID),
 		Name: "Gregory",
 	}
 
@@ -207,32 +202,6 @@ func TestUpdateTenant(t *testing.T) {
 	t.Log("End TestUpdateTenant")
 }
 
-//func TestUpdateWrongTenant(t *testing.T) {
-//	err := refreshTenantTable()
-//	if err != nil {
-//		t.Fatal(err)
-//		return
-//	}
-//
-//	seedOneTenant()
-//
-//	existingTenant := TenantModel{
-//		Uuid: libUuid.New(),
-//		Name: "Greg",
-//	}
-//
-//	transaction := database.Connect().Begin()
-//
-//	updatedTenant, err := existingTenant.Update()
-//
-//	if assert.Error(t, err) {
-//		assert.NoError(t, transaction.Error)
-//		assert.Equal(t, "NOT NULL constraint failed: tenant.name", err.Error())
-//		assert.Nil(t, updatedTenant)
-//		t.Log("End TestUpdateWrongTenant")
-//	}
-//}
-
 func TestDeleteTenant(t *testing.T) {
 	err := refreshTenantTable()
 	if err != nil {
@@ -242,7 +211,7 @@ func TestDeleteTenant(t *testing.T) {
 
 	seedOneTenant()
 	tenantInstance := TenantModel{
-		Uuid: libUuid.MustParse(validTenantId),
+		UUID: libUuid.MustParse(validTenantID),
 	}
 
 	isDeleted, err := tenantInstance.Delete()
@@ -256,7 +225,6 @@ func TestDeleteTenant(t *testing.T) {
 		t.Log("End TestDeleteTenant")
 	}
 
-
 	//err = refreshTenantTable()
 	//if err != nil {
 	//	t.Fatal(err)
@@ -264,7 +232,7 @@ func TestDeleteTenant(t *testing.T) {
 	//}
 	//
 	//tenantInstance = TenantModel{
-	//	Uuid: libUuid.New(),
+	//	UUID: libUuid.New(),
 	//}
 	//
 	//transaction := database.Connect().Begin()

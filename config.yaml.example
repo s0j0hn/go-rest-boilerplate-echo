@@ -6,4 +6,8 @@ database:
   name: DBNAME
   user: DBUSER
   password: DBUSERPASSWORD
-  
+
+rabbitmq:
+  host: RABBITMQHOST
+  user: RABBITMQUSER
+  password: RABBITMQPASSWORD

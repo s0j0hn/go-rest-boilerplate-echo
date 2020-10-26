@@ -4,7 +4,7 @@ PKG := "gitlab.com/s0j0hn/$(PROJECT_NAME)"
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/)
 GO_FILES := $(shell find . -name '*.go' | grep -v /vendor/ | grep -v _test.go)
 
-all:test build
+all:build test serve
 	@echo DONE!
 
 dep:
@@ -19,9 +19,13 @@ swagger:
 	@echo GENERATING SWAGGER...
 	@swag init
 
-postgres:
-	@echo GENERATING CODE...
-	@docker stack deploy --compose-file docker-compose.yml postgres
+start-services:
+	@echo STARTING DOCKER SERVICES...
+	@docker stack deploy --compose-file docker-compose.yml goboilerplate
+
+stop-services:
+	@echo STOPING DOCKER SERVICES...
+	@docker stack rm goboilerplate
 
 test:
 	@echo UNIT TESTING...
