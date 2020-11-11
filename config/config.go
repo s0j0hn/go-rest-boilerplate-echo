@@ -51,3 +51,15 @@ func GetRabbitMQAccess() string {
 	)
 	return connection
 }
+
+// GetAMQPPushQueue is used to get the env value for queue to push events.
+func GetAMQPPushQueue() string {
+	v := getViper()
+	return fmt.Sprintf("%s", v.Get("rabbitmq.pushqueue"))
+}
+
+// GetAMQPQListenQueue is used to get the env value for queue to listen to events.
+func GetAMQPQListenQueue() string {
+	v := getViper()
+	return fmt.Sprintf("%s", v.Get("rabbitmq.listenqueue"))
+}

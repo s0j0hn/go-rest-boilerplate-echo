@@ -4,13 +4,15 @@ import (
 	libUUID "github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	tenantModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/database/models/tenant"
+	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/rabbitmq"
 	"net/http"
 )
 
 type (
 	// Handler is a default handler as there is no generics.
 	Handler struct {
-		tenantModel tenantModel.TenantModel
+		tenantModel tenantModel.Model
+		taskManager *rabbitmq.TaskClient
 	}
 
 	resultJSON struct {
@@ -34,8 +36,8 @@ type (
 )
 
 // CreateHandler is always in each Handler
-func CreateHandler(tenant tenantModel.TenantModel) *Handler {
-	return &Handler{tenant}
+func CreateHandler(tenant tenantModel.Model, taskClient *rabbitmq.TaskClient) *Handler {
+	return &Handler{tenant,taskClient}
 }
 
 // GetAll godoc
@@ -121,6 +123,13 @@ func (h Handler) Create(c echo.Context) error {
 	if err := c.Validate(post); err != nil {
 		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	taskBytes := rabbitmq.CreateNewTask([]string{"test", "test2"}, "Status is OK")
+	err := h.taskManager.PushNewTask(taskBytes)
+	if err != nil {
+		c.Logger().Error(err.Error())
+		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
 	h.tenantModel.UUID = post.ID

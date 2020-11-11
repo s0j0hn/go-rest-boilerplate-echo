@@ -1,4 +1,4 @@
-package tenantModel
+package tenant
 
 import (
 	"errors"
@@ -7,20 +7,20 @@ import (
 	"gorm.io/gorm"
 )
 
-// TenantModel is a tenant model description.
-type TenantModel struct {
+// Model is a tenant model description.
+type Model struct {
 	gorm.Model
 	UUID libUuid.UUID `gorm:"unique_index;not null"`
 	Name string       `gorm:"unique;not null;type:varchar(100);default:null"`
 }
 
 // TableName used to set the table name.
-func (TenantModel) TableName() string {
+func (Model) TableName() string {
 	return "tenant"
 }
 
 // BeforeCreate used to transform some params before saving to database.
-func (tenantModel *TenantModel) BeforeCreate(ctx *gorm.DB) (err error) {
+func (tenantModel *Model) BeforeCreate(ctx *gorm.DB) (err error) {
 	if tenantModel.UUID.String() == "00000000-0000-0000-0000-000000000000" {
 		err = ctx.Statement.Set("UUID", libUuid.New()).Error
 		if err != nil {
@@ -32,8 +32,8 @@ func (tenantModel *TenantModel) BeforeCreate(ctx *gorm.DB) (err error) {
 }
 
 // GetAll is used to get all elements for database.
-func (tenantModel *TenantModel) GetAll() (*[]TenantModel, error) {
-	var tenants []TenantModel
+func (tenantModel *Model) GetAll() (*[]Model, error) {
+	var tenants []Model
 	err := databaseManager.Connect().Find(&tenants).Error
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func (tenantModel *TenantModel) GetAll() (*[]TenantModel, error) {
 }
 
 // Save is used to write data into database.
-func (tenantModel *TenantModel) Save() (*TenantModel, error) {
+func (tenantModel *Model) Save() (*Model, error) {
 	transaction := databaseManager.Connect().Begin()
 
 	if transaction.Error != nil {
@@ -60,14 +60,14 @@ func (tenantModel *TenantModel) Save() (*TenantModel, error) {
 }
 
 // Update is used to write data into database.
-func (tenantModel *TenantModel) Update() (*TenantModel, error) {
+func (tenantModel *Model) Update() (*Model, error) {
 	transaction := databaseManager.Connect().Begin()
 
 	if transaction.Error != nil {
 		return nil, transaction.Error
 	}
 
-	err := transaction.Model(&tenantModel).Where(TenantModel{UUID: tenantModel.UUID}).Updates(&tenantModel).Error
+	err := transaction.Model(&tenantModel).Where(Model{UUID: tenantModel.UUID}).Updates(&tenantModel).Error
 	if err != nil {
 		transaction.Rollback()
 		return nil, err
@@ -78,8 +78,8 @@ func (tenantModel *TenantModel) Update() (*TenantModel, error) {
 }
 
 // GetOne is used to retrieve element from database.
-func (tenantModel *TenantModel) GetOne() (*TenantModel, error) {
-	err := databaseManager.Connect().Where(&TenantModel{UUID: tenantModel.UUID}).First(&tenantModel).Error
+func (tenantModel *Model) GetOne() (*Model, error) {
+	err := databaseManager.Connect().Where(&Model{UUID: tenantModel.UUID}).First(&tenantModel).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, errors.New("tenant not found in database")
@@ -89,14 +89,14 @@ func (tenantModel *TenantModel) GetOne() (*TenantModel, error) {
 }
 
 // Delete is used to drop data from database.
-func (tenantModel *TenantModel) Delete() (bool, error) {
+func (tenantModel *Model) Delete() (bool, error) {
 	libUuid.MustParse(tenantModel.UUID.String())
 
 	if tenantModel.UUID.String() == "00000000-0000-0000-0000-000000000000" {
 		return false, errors.New("no uuid specified")
 	}
 
-	err := databaseManager.Connect().First(&tenantModel).Where(&TenantModel{UUID: tenantModel.UUID}).Error
+	err := databaseManager.Connect().First(&tenantModel).Where(&Model{UUID: tenantModel.UUID}).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return false, nil
