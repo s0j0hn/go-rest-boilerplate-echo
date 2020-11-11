@@ -2,7 +2,7 @@ module gitlab.com/s0j0hn/go-rest-boilerplate-echo
 
 require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
-	github.com/casbin/casbin/v2 v2.15.0
+	github.com/casbin/casbin/v2 v2.16.0
 	github.com/casbin/gorm-adapter/v3 v3.0.3
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-openapi/spec v0.19.9 // indirect
@@ -36,7 +36,7 @@ require (
 	gopkg.in/ini.v1 v1.61.0 // indirect
 	gorm.io/driver/postgres v1.0.5
 	gorm.io/driver/sqlite v1.1.3
-	gorm.io/gorm v1.20.5
+	gorm.io/gorm v1.20.6
 )
 
 go 1.15

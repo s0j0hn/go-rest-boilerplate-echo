@@ -99,10 +99,26 @@ func main() {
 		os.Exit(1)
 	}
 
-	// createTenantPolicies(policyEnforcer)
+	createTenantPolicies(policyEnforcer)
 
-	tenantInstance := tenantModel.TenantModel{}
-	tenantHandlerInstance := tenantHandler.CreateHandler(tenantInstance)
+	doneChannel := make(chan int)
+	// amqpContext := context.Background()
+	rabbitMQClient := rabbitmq.NewAMQPClient(config.GetAMQPQListenQueue(), config.GetAMQPPushQueue(), config.GetRabbitMQAccess(), log.Logger, doneChannel)
+	doneChannel <- 0
+	taskManager := rabbitmq.NewTaskManagerClient(rabbitMQClient)
+
+	//go func() {
+	//	for {
+	//		err = rabbitMQClient.Stream(amqpContext)
+	//		if errors.Is(err, rabbitmq.ErrDisconnected) {
+	//			continue
+	//		}
+	//		break
+	//	}
+	//}()
+
+	tenantInstance := tenantModel.Model{}
+	tenantHandlerInstance := tenantHandler.CreateHandler(tenantInstance, taskManager)
 
 	policyCheck := PolicyEnforcer{enforcer: policyEnforcer}
 
@@ -121,22 +137,6 @@ func main() {
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPost, http.MethodDelete},
 	}))
-
-	goChan := make(chan os.Signal, 1)
-	rabbitMQClient := rabbitmq.NewAMQPClient("listenqueue", "pushqueue", config.GetRabbitMQAccess(), log.Logger, goChan)
-	taskManager := rabbitmq.NewTaskManagerClient(rabbitMQClient)
-
-	taskBytes := rabbitmq.CreateNewTask([]string{"test", "test2"}, "Status is OK")
-	err = taskManager.PushNewTask(taskBytes)
-	if err != nil {
-		echoServer.Logger.Fatal(err)
-	}
-
-	err = rabbitMQClient.Close()
-	if err != nil {
-		echoServer.Logger.Fatal(err)
-		os.Exit(1)
-	}
 
 	if config.IsProd() {
 		echoServer.AutoTLSManager.Cache = autocert.DirCache("./.cache")
