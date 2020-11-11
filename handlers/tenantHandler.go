@@ -37,7 +37,7 @@ type (
 
 // CreateHandler is always in each Handler
 func CreateHandler(tenant tenantModel.Model, taskClient *rabbitmq.TaskClient) *Handler {
-	return &Handler{tenant,taskClient}
+	return &Handler{tenant, taskClient}
 }
 
 // GetAll godoc

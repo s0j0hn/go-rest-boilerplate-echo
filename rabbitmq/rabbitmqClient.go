@@ -13,6 +13,7 @@ import (
 )
 
 var (
+	// ErrDisconnected the message error for disconnection
 	ErrDisconnected = errors.New("disconnected from rabbitmq, trying to reconnect")
 )
 
@@ -23,18 +24,18 @@ const (
 
 // AMQPClient holds necessery information for rabbitMQ
 type AMQPClient struct {
-	pushQueue     string
-	listenQueue   string
-	logger        zerolog.Logger
-	connection    *amqp.Connection
-	amqpChannel   *amqp.Channel
-	doneChannel   chan int
-	notifyClose   chan *amqp.Error
-	notifyConfirm chan amqp.Confirmation
-	isConnected   bool
-	alive         bool
-	threads       int
-	wg            *sync.WaitGroup
+	pushQueue       string
+	listenQueue     string
+	logger          zerolog.Logger
+	connection      *amqp.Connection
+	amqpChannel     *amqp.Channel
+	doneChannel     chan int
+	notifyClose     chan *amqp.Error
+	notifyConfirm   chan amqp.Confirmation
+	isConnected     bool
+	alive           bool
+	threads         int
+	wg              *sync.WaitGroup
 	activeConsumers []string
 }
 
@@ -77,20 +78,20 @@ func (c *AMQPClient) handleReconnect(addr string) {
 			}
 
 			select {
-				case <-c.doneChannel:
-					c.logger.Printf("Received something into done amqpChannel")
-					return
-				case <-time.After(reconnectDelay + time.Duration(retryCount)*time.Second):
-					c.logger.Printf("disconnected from rabbitMQ and failed to connect")
-					retryCount++
+			case <-c.doneChannel:
+				c.logger.Printf("Received something into done amqpChannel")
+				return
+			case <-time.After(reconnectDelay + time.Duration(retryCount)*time.Second):
+				c.logger.Printf("disconnected from rabbitMQ and failed to connect")
+				retryCount++
 			}
 		}
 
 		c.logger.Printf("Connected to rabbitMQ in: %vms", time.Since(t).Milliseconds())
 		select {
-			case <-c.doneChannel:
-				return
-			case <-c.notifyClose:
+		case <-c.doneChannel:
+			return
+		case <-c.notifyClose:
 		}
 	}
 }
@@ -290,17 +291,17 @@ func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
 	}
 
 	switch evt.Status {
-		case "running":
-			// Call an actual function
-		case "failed":
-			// Call in case of fail
-		default:
-			err = msg.Reject(false)
-			if err != nil {
-				logAndNack(msg, l, startTime, err.Error())
-				return
-			}
+	case "running":
+		// Call an actual function
+	case "failed":
+		// Call in case of fail
+	default:
+		err = msg.Reject(false)
+		if err != nil {
+			logAndNack(msg, l, startTime, err.Error())
 			return
+		}
+		return
 	}
 
 	l.Str("level", "info").Int64("took-ms", time.Since(startTime).Milliseconds()).Msgf("%s succeeded", evt.Status)
