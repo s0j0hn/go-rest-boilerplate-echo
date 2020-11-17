@@ -29,7 +29,7 @@ type AMQPClient struct {
 	logger          zerolog.Logger
 	connection      *amqp.Connection
 	amqpChannel     *amqp.Channel
-	doneChannel     chan int
+	doneChannel     chan bool
 	notifyClose     chan *amqp.Error
 	notifyConfirm   chan amqp.Confirmation
 	isConnected     bool
@@ -40,7 +40,7 @@ type AMQPClient struct {
 }
 
 // NewAMQPClient is a constructor that takes address, push and listen queue names, logger, and a amqpChannel that will notify rabbitmq client on server shutdown. We calculate the number of threads, create the client, and start the connection process. Connect method connects to the rabbitmq server and creates push/listen channels if they don't exist.
-func NewAMQPClient(listenQueue, pushQueue, addr string, l zerolog.Logger, done chan int) *AMQPClient {
+func NewAMQPClient(listenQueue, pushQueue, addr string, l zerolog.Logger, done chan bool) *AMQPClient {
 	threads := runtime.GOMAXPROCS(0)
 	if numCPU := runtime.NumCPU(); numCPU > threads {
 		threads = numCPU
@@ -284,6 +284,7 @@ func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
 		logAndNack(msg, l, startTime, "unmarshalling body: %s - %s", string(msg.Body), err.Error())
 		return
 	}
+	c.logger.Printf("%s", evt.Tags)
 
 	if evt.Status == "" {
 		logAndNack(msg, l, startTime, "received event without data")
@@ -292,6 +293,7 @@ func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
 
 	switch evt.Status {
 	case "running":
+		c.logger.Printf(evt.Description)
 		// Call an actual function
 	case "failed":
 		// Call in case of fail
@@ -332,7 +334,9 @@ func (c *AMQPClient) Close() error {
 	c.logger.Printf("Waiting for current messages to be processed...")
 
 	go func() {
-		defer c.wg.Done()
+		if c.threads == 0 {
+			defer c.wg.Done()
+		}
 		for i := 1; i <= len(c.activeConsumers); i++ {
 			c.logger.Printf("Closing consumer: ", i)
 			err := c.amqpChannel.Cancel(consumerName(i), false)

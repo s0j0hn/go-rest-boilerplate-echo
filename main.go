@@ -101,10 +101,10 @@ func main() {
 
 	createTenantPolicies(policyEnforcer)
 
-	doneChannel := make(chan int)
+	doneChannel := make(chan bool)
 	// amqpContext := context.Background()
 	rabbitMQClient := rabbitmq.NewAMQPClient(config.GetAMQPQListenQueue(), config.GetAMQPPushQueue(), config.GetRabbitMQAccess(), log.Logger, doneChannel)
-	doneChannel <- 0
+	doneChannel <- true
 	taskManager := rabbitmq.NewTaskManagerClient(rabbitMQClient)
 
 	//go func() {
