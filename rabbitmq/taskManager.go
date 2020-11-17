@@ -35,18 +35,17 @@ func taskToBytes(task Task) []byte {
 		log.Fatal(err)
 	}
 
-	log.Println(taskJSON)
-
 	return taskJSON
 }
 
 // CreateNewTask is used to create a new Task into bytes.
-func CreateNewTask(tags []string, status string) []byte {
+func CreateNewTask(tags []string, description string) []byte {
 	newTask := Task{
-		ID:       libUuid.New(),
-		Tags:     tags,
-		Status:   status,
-		Progress: .01,
+		ID:          libUuid.New(),
+		Tags:        tags,
+		Status:      "waiting",
+		Progress:    .01,
+		Description: description,
 	}
 
 	return taskToBytes(newTask)

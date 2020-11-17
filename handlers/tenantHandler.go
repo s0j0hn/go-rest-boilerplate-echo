@@ -16,17 +16,17 @@ type (
 	}
 
 	resultJSON struct {
-		ID   libUUID.UUID `json:"id" form:"id" validate:"required"`
+		ID   libUUID.UUID `json:"id" form:"id" format:"uuid" validate:"required"`
 		Name string       `json:"name" form:"name" validate:"required"`
 	}
 
 	postTenantData struct {
-		ID   libUUID.UUID `json:"id" form:"id" validate:"required"`
-		Name string       `json:"name" form:"name" validate:"required"`
+		ID   string `json:"id" form:"id" format:"uuid" validate:"required"`
+		Name string `json:"name" form:"name" validate:"required"`
 	}
 
 	updateTenantData struct {
-		ID   libUUID.UUID `json:"id" form:"id" validate:"required"`
+		ID   libUUID.UUID `json:"id" form:"id" format:"uuid" validate:"required"`
 		Name string       `json:"name" form:"name" validate:"required"`
 	}
 
@@ -114,26 +114,27 @@ func (h Handler) GetOneByID(c echo.Context) error {
 // @Failure 500 {object} handlers.errorResult
 // @Router /tenants [post]
 func (h Handler) Create(c echo.Context) error {
-	post := new(postTenantData)
-	if err := c.Bind(post); err != nil {
-		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusInternalServerError, err.Error())
-	}
+	newTenantData := new(postTenantData)
 
-	if err := c.Validate(post); err != nil {
-		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusBadRequest, err.Error())
-	}
-
-	taskBytes := rabbitmq.CreateNewTask([]string{"test", "test2"}, "Status is OK")
+	taskBytes := rabbitmq.CreateNewTask([]string{"create", "tenant"}, "Creating tenant "+newTenantData.Name)
 	err := h.taskManager.PushNewTask(taskBytes)
 	if err != nil {
 		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
-	h.tenantModel.UUID = post.ID
-	h.tenantModel.Name = post.Name
+	if err := c.Bind(newTenantData); err != nil {
+		c.Logger().Error(err.Error())
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	if err := c.Validate(newTenantData); err != nil {
+		c.Logger().Error(err.Error())
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	h.tenantModel.UUID = libUUID.MustParse(newTenantData.ID)
+	h.tenantModel.Name = newTenantData.Name
 
 	tenant, err := h.tenantModel.Save()
 	if err != nil {

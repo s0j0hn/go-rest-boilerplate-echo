@@ -284,7 +284,6 @@ func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
 		logAndNack(msg, l, startTime, "unmarshalling body: %s - %s", string(msg.Body), err.Error())
 		return
 	}
-	c.logger.Printf("%s", evt.Tags)
 
 	if evt.Status == "" {
 		logAndNack(msg, l, startTime, "received event without data")
@@ -292,11 +291,14 @@ func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
 	}
 
 	switch evt.Status {
+	case "waiting":
+		c.logger.Printf(evt.Description)
+	case "failed":
+		c.logger.Printf(evt.Description)
 	case "running":
 		c.logger.Printf(evt.Description)
-		// Call an actual function
-	case "failed":
-		// Call in case of fail
+	case "completed":
+		c.logger.Printf(evt.Description)
 	default:
 		err = msg.Reject(false)
 		if err != nil {

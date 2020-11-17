@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"github.com/casbin/casbin/v2"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	golog "github.com/labstack/gommon/log"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/swaggo/echo-swagger"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/config"
@@ -84,6 +88,11 @@ func main() {
 		Format: "method=${method}  uri=${uri}  status=${status}\n",
 	}))
 
+	// For more customizations: https://echo.labstack.com/guide/customization
+	if l, ok := echoServer.Logger.(*golog.Logger); ok {
+		l.SetHeader("${time_rfc3339} ${level}")
+	}
+
 	echoServer.Validator = &CustomValidator{validator: validator.New()}
 
 	echoServer.Use(middleware.Recover())
@@ -101,21 +110,22 @@ func main() {
 
 	createTenantPolicies(policyEnforcer)
 
+	zeroLoggger := log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	doneChannel := make(chan bool)
-	// amqpContext := context.Background()
-	rabbitMQClient := rabbitmq.NewAMQPClient(config.GetAMQPQListenQueue(), config.GetAMQPPushQueue(), config.GetRabbitMQAccess(), log.Logger, doneChannel)
+	amqpContext := context.Background()
+	rabbitMQClient := rabbitmq.NewAMQPClient(config.GetAMQPQListenQueue(), config.GetAMQPPushQueue(), config.GetRabbitMQAccess(), zeroLoggger, doneChannel)
 	doneChannel <- true
 	taskManager := rabbitmq.NewTaskManagerClient(rabbitMQClient)
 
-	//go func() {
-	//	for {
-	//		err = rabbitMQClient.Stream(amqpContext)
-	//		if errors.Is(err, rabbitmq.ErrDisconnected) {
-	//			continue
-	//		}
-	//		break
-	//	}
-	//}()
+	go func() {
+		for {
+			err = rabbitMQClient.Stream(amqpContext)
+			if errors.Is(err, rabbitmq.ErrDisconnected) {
+				continue
+			}
+			break
+		}
+	}()
 
 	tenantInstance := tenantModel.Model{}
 	tenantHandlerInstance := tenantHandler.CreateHandler(tenantInstance, taskManager)
