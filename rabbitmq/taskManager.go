@@ -33,13 +33,14 @@ func taskToBytes(task Task) []byte {
 	taskJSON, err := json.Marshal(task)
 	if err != nil {
 		log.Fatal(err)
+		return nil
 	}
 
 	return taskJSON
 }
 
 // CreateNewTask is used to create a new Task into bytes.
-func CreateNewTask(tags []string, description string) []byte {
+func CreateNewTask(tags []string, description string) Task {
 	newTask := Task{
 		ID:          libUuid.New(),
 		Tags:        tags,
@@ -48,12 +49,23 @@ func CreateNewTask(tags []string, description string) []byte {
 		Description: description,
 	}
 
-	return taskToBytes(newTask)
+	return newTask
 }
 
-// PushNewTask is used to push a taks into pushQueue.
-func (c *TaskClient) PushNewTask(task []byte) error {
-	err := c.amqpClient.Push(task)
+// PushTask is used to push a taks into pushQueue.
+func (c *TaskClient) PushTask(task Task) error {
+	err := c.amqpClient.Push(taskToBytes(task))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// CompleteTask is to update task status as completed.
+func (c *TaskClient) CompleteTask(task Task) error {
+	task.Status = "completed"
+	err := c.amqpClient.Push(taskToBytes(task))
 	if err != nil {
 		return err
 	}

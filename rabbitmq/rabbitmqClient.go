@@ -290,15 +290,12 @@ func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
 		return
 	}
 
+	// TODO: implement a away to store the tasks
 	switch evt.Status {
 	case "waiting":
-		c.logger.Printf(evt.Description)
 	case "failed":
-		c.logger.Printf(evt.Description)
 	case "running":
-		c.logger.Printf(evt.Description)
 	case "completed":
-		c.logger.Printf(evt.Description)
 	default:
 		err = msg.Reject(false)
 		if err != nil {
