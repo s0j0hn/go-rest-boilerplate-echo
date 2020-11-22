@@ -21,7 +21,7 @@ type (
 	}
 
 	resultTask struct {
-		TaskID   libUUID.UUID `json:"taskId" form:"taskId" format:"uuid" validate:"required"`
+		TaskID libUUID.UUID `json:"taskId" form:"taskId" format:"uuid" validate:"required"`
 	}
 
 	postTenantData struct {

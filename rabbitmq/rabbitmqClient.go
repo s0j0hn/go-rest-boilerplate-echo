@@ -37,23 +37,25 @@ type AMQPClient struct {
 	threads         int
 	wg              *sync.WaitGroup
 	activeConsumers []string
+	messagesChannel chan []byte
 }
 
 // NewAMQPClient is a constructor that takes address, push and listen queue names, logger, and a amqpChannel that will notify rabbitmq client on server shutdown. We calculate the number of threads, create the client, and start the connection process. Connect method connects to the rabbitmq server and creates push/listen channels if they don't exist.
-func NewAMQPClient(listenQueue, pushQueue, addr string, l zerolog.Logger, done chan bool) *AMQPClient {
+func NewAMQPClient(listenQueue, pushQueue, addr string, l zerolog.Logger, done chan bool, messages chan []byte) *AMQPClient {
 	threads := runtime.GOMAXPROCS(0)
 	if numCPU := runtime.NumCPU(); numCPU > threads {
 		threads = numCPU
 	}
 
 	client := AMQPClient{
-		listenQueue: listenQueue,
-		logger:      l,
-		threads:     threads,
-		doneChannel: done,
-		pushQueue:   pushQueue,
-		alive:       true,
-		wg:          &sync.WaitGroup{},
+		listenQueue:     listenQueue,
+		logger:          l,
+		threads:         threads,
+		doneChannel:     done,
+		pushQueue:       pushQueue,
+		alive:           true,
+		wg:              &sync.WaitGroup{},
+		messagesChannel: messages,
 	}
 
 	client.wg.Add(threads)
@@ -278,6 +280,8 @@ func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
 
 	l := c.logger.Log().Timestamp()
 	startTime := time.Now()
+
+	c.messagesChannel <- msg.Body
 
 	err := json.Unmarshal(msg.Body, &evt)
 	if err != nil {

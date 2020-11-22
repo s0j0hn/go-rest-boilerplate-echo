@@ -20,6 +20,7 @@ import (
 	tenantHandler "gitlab.com/s0j0hn/go-rest-boilerplate-echo/handlers"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/policy"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/rabbitmq"
+	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/websocket"
 	"golang.org/x/crypto/acme/autocert"
 	"gopkg.in/go-playground/validator.v9"
 	"net/http"
@@ -112,8 +113,9 @@ func main() {
 
 	zeroLoggger := log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	doneChannel := make(chan bool)
+	messagesChannel := make(chan []byte)
 	amqpContext := context.Background()
-	rabbitMQClient := rabbitmq.NewAMQPClient(config.GetAMQPQListenQueue(), config.GetAMQPPushQueue(), config.GetRabbitMQAccess(), zeroLoggger, doneChannel)
+	rabbitMQClient := rabbitmq.NewAMQPClient(config.GetAMQPQListenQueue(), config.GetAMQPPushQueue(), config.GetRabbitMQAccess(), zeroLoggger, doneChannel, messagesChannel)
 	doneChannel <- true
 	taskManager := rabbitmq.NewTaskManagerClient(rabbitMQClient)
 
@@ -147,6 +149,8 @@ func main() {
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPost, http.MethodDelete},
 	}))
+
+	go websocket.CreateServer(messagesChannel)
 
 	if config.IsProd() {
 		echoServer.AutoTLSManager.Cache = autocert.DirCache("./.cache")
