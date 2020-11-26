@@ -120,13 +120,6 @@ func (h Handler) GetOneByID(c echo.Context) error {
 func (h Handler) Create(c echo.Context) error {
 	newTenantData := new(postTenantData)
 
-	task := rabbitmq.CreateNewTask([]string{"create", "tenant"}, "Creating tenant "+newTenantData.Name)
-	err := h.taskManager.PushTask(task)
-	if err != nil {
-		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusInternalServerError, err.Error())
-	}
-
 	if err := c.Bind(newTenantData); err != nil {
 		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err.Error())
@@ -139,6 +132,13 @@ func (h Handler) Create(c echo.Context) error {
 
 	h.tenantModel.UUID = libUUID.MustParse(newTenantData.ID)
 	h.tenantModel.Name = newTenantData.Name
+
+	task := rabbitmq.CreateNewTask([]string{"create", "tenant"}, "Creating tenant "+newTenantData.Name)
+	err := h.taskManager.PushTask(task)
+	if err != nil {
+		c.Logger().Error(err.Error())
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
 
 	_, err = h.tenantModel.Save()
 	if err != nil {

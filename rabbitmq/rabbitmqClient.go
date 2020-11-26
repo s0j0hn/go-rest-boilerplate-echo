@@ -281,7 +281,9 @@ func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
 	l := c.logger.Log().Timestamp()
 	startTime := time.Now()
 
-	c.messagesChannel <- msg.Body
+	go func() {
+		c.messagesChannel <- msg.Body
+	}()
 
 	err := json.Unmarshal(msg.Body, &evt)
 	if err != nil {
@@ -309,7 +311,7 @@ func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
 		return
 	}
 
-	l.Str("level", "info").Int64("took-ms", time.Since(startTime).Milliseconds()).Msgf("%s succeeded", evt.Status)
+	l.Str("level", "info").Int64("took-ms", time.Since(startTime).Milliseconds()).Msgf("%s parsed successfully", evt.Description)
 
 	err = msg.Ack(false)
 	if err != nil {
