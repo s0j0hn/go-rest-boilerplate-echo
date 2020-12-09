@@ -28,6 +28,11 @@ func GetAddress() string {
 	return getViper().Get("address").(string)
 }
 
+// GetWebSocketAddress is used to get the webserver host to listen on.
+func GetWebSocketAddress() string {
+	return getViper().Get("websocket").(string)
+}
+
 // GetDatabaseAccess is used to get the database credentials.
 func GetDatabaseAccess() string {
 	v := getViper()

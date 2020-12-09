@@ -29,7 +29,7 @@ type AMQPClient struct {
 	logger          zerolog.Logger
 	connection      *amqp.Connection
 	amqpChannel     *amqp.Channel
-	doneChannel     chan int
+	doneChannel     chan bool
 	notifyClose     chan *amqp.Error
 	notifyConfirm   chan amqp.Confirmation
 	isConnected     bool
@@ -37,23 +37,25 @@ type AMQPClient struct {
 	threads         int
 	wg              *sync.WaitGroup
 	activeConsumers []string
+	messagesChannel chan []byte
 }
 
 // NewAMQPClient is a constructor that takes address, push and listen queue names, logger, and a amqpChannel that will notify rabbitmq client on server shutdown. We calculate the number of threads, create the client, and start the connection process. Connect method connects to the rabbitmq server and creates push/listen channels if they don't exist.
-func NewAMQPClient(listenQueue, pushQueue, addr string, l zerolog.Logger, done chan int) *AMQPClient {
+func NewAMQPClient(listenQueue, pushQueue, addr string, l zerolog.Logger, done chan bool, messages chan []byte) *AMQPClient {
 	threads := runtime.GOMAXPROCS(0)
 	if numCPU := runtime.NumCPU(); numCPU > threads {
 		threads = numCPU
 	}
 
 	client := AMQPClient{
-		listenQueue: listenQueue,
-		logger:      l,
-		threads:     threads,
-		doneChannel: done,
-		pushQueue:   pushQueue,
-		alive:       true,
-		wg:          &sync.WaitGroup{},
+		listenQueue:     listenQueue,
+		logger:          l,
+		threads:         threads,
+		doneChannel:     done,
+		pushQueue:       pushQueue,
+		alive:           true,
+		wg:              &sync.WaitGroup{},
+		messagesChannel: messages,
 	}
 
 	client.wg.Add(threads)
@@ -279,6 +281,10 @@ func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
 	l := c.logger.Log().Timestamp()
 	startTime := time.Now()
 
+	go func() {
+		c.messagesChannel <- msg.Body
+	}()
+
 	err := json.Unmarshal(msg.Body, &evt)
 	if err != nil {
 		logAndNack(msg, l, startTime, "unmarshalling body: %s - %s", string(msg.Body), err.Error())
@@ -290,11 +296,12 @@ func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
 		return
 	}
 
+	// TODO: implement a away to store the tasks
 	switch evt.Status {
-	case "running":
-		// Call an actual function
+	case "waiting":
 	case "failed":
-		// Call in case of fail
+	case "running":
+	case "completed":
 	default:
 		err = msg.Reject(false)
 		if err != nil {
@@ -304,7 +311,7 @@ func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
 		return
 	}
 
-	l.Str("level", "info").Int64("took-ms", time.Since(startTime).Milliseconds()).Msgf("%s succeeded", evt.Status)
+	l.Str("level", "info").Int64("took-ms", time.Since(startTime).Milliseconds()).Msgf("%s parsed successfully", evt.Description)
 
 	err = msg.Ack(false)
 	if err != nil {
@@ -332,7 +339,9 @@ func (c *AMQPClient) Close() error {
 	c.logger.Printf("Waiting for current messages to be processed...")
 
 	go func() {
-		defer c.wg.Done()
+		if c.threads == 0 {
+			defer c.wg.Done()
+		}
 		for i := 1; i <= len(c.activeConsumers); i++ {
 			c.logger.Printf("Closing consumer: ", i)
 			err := c.amqpChannel.Cancel(consumerName(i), false)

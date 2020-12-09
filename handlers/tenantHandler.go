@@ -16,17 +16,21 @@ type (
 	}
 
 	resultJSON struct {
-		ID   libUUID.UUID `json:"id" form:"id" validate:"required"`
+		ID   libUUID.UUID `json:"id" form:"id" format:"uuid" validate:"required"`
 		Name string       `json:"name" form:"name" validate:"required"`
+	}
+
+	resultTask struct {
+		TaskID libUUID.UUID `json:"taskId" form:"taskId" format:"uuid" validate:"required"`
 	}
 
 	postTenantData struct {
-		ID   libUUID.UUID `json:"id" form:"id" validate:"required"`
-		Name string       `json:"name" form:"name" validate:"required"`
+		ID   string `json:"id" form:"id" format:"uuid" validate:"required"`
+		Name string `json:"name" form:"name" validate:"required"`
 	}
 
 	updateTenantData struct {
-		ID   libUUID.UUID `json:"id" form:"id" validate:"required"`
+		ID   libUUID.UUID `json:"id" form:"id" format:"uuid" validate:"required"`
 		Name string       `json:"name" form:"name" validate:"required"`
 	}
 
@@ -109,41 +113,47 @@ func (h Handler) GetOneByID(c echo.Context) error {
 // @Accept  json
 // @Produce  json
 // @Param tenant body handlers.postTenantData true "Add tenant"
-// @Success 201 {object} handlers.resultJSON
+// @Success 201 {object} handlers.resultTask
 // @Failure 400 {object} handlers.errorResult
 // @Failure 500 {object} handlers.errorResult
 // @Router /tenants [post]
 func (h Handler) Create(c echo.Context) error {
-	post := new(postTenantData)
-	if err := c.Bind(post); err != nil {
+	newTenantData := new(postTenantData)
+
+	if err := c.Bind(newTenantData); err != nil {
 		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
-	if err := c.Validate(post); err != nil {
+	if err := c.Validate(newTenantData); err != nil {
 		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	taskBytes := rabbitmq.CreateNewTask([]string{"test", "test2"}, "Status is OK")
-	err := h.taskManager.PushNewTask(taskBytes)
+	h.tenantModel.UUID = libUUID.MustParse(newTenantData.ID)
+	h.tenantModel.Name = newTenantData.Name
+
+	task := rabbitmq.CreateNewTask([]string{"create", "tenant"}, "Creating tenant "+newTenantData.Name)
+	err := h.taskManager.PushTask(task)
 	if err != nil {
 		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
-	h.tenantModel.UUID = post.ID
-	h.tenantModel.Name = post.Name
-
-	tenant, err := h.tenantModel.Save()
+	_, err = h.tenantModel.Save()
 	if err != nil {
 		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
-	return c.JSON(http.StatusCreated, resultJSON{
-		ID:   tenant.UUID,
-		Name: tenant.Name,
+	err = h.taskManager.CompleteTask(task)
+	if err != nil {
+		c.Logger().Error(err.Error())
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusCreated, resultTask{
+		TaskID: task.ID,
 	})
 }
 
