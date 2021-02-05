@@ -1,15 +1,16 @@
 module gitlab.com/s0j0hn/go-rest-boilerplate-echo
 
 require (
+	github.com/NeowayLabs/wabbit v0.0.0-20201021105516-ded4a9ef19d2
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
-	github.com/casbin/casbin/v2 v2.19.0
-	github.com/casbin/gorm-adapter/v3 v3.0.4
+	github.com/casbin/casbin/v2 v2.23.0
+	github.com/casbin/gorm-adapter/v3 v3.2.0
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/go-openapi/spec v0.19.9 // indirect
-	github.com/go-openapi/swag v0.19.9 // indirect
+	github.com/gin-gonic/gin v1.6.3 // indirect
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/google/uuid v1.1.2
+	github.com/gofrs/uuid v3.3.0+incompatible // indirect
+	github.com/google/uuid v1.2.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/labstack/echo/v4 v4.1.17
 	github.com/labstack/gommon v0.3.0
@@ -19,6 +20,7 @@ require (
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
+	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/rs/zerolog v1.20.0
 	github.com/spf13/afero v1.3.5 // indirect
@@ -27,18 +29,16 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/streadway/amqp v1.0.0
-	github.com/stretchr/testify v1.6.1
-	github.com/swaggo/echo-swagger v1.0.0
-	github.com/swaggo/swag v1.6.9
-	golang.org/x/crypto v0.0.0-20201124201722-c8d3bf9c5392
-	golang.org/x/net v0.0.0-20200904194848-62affa334b73 // indirect
-	golang.org/x/sys v0.0.0-20200909081042-eff7692f9009 // indirect
-	golang.org/x/tools v0.0.0-20200910165216-53e29e9d1252 // indirect
+	github.com/stretchr/testify v1.7.0
+	github.com/swaggo/echo-swagger v1.1.0
+	github.com/swaggo/gin-swagger v1.2.0 // indirect
+	github.com/swaggo/swag v1.7.0
+	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	gopkg.in/go-playground/validator.v9 v9.31.0
 	gopkg.in/ini.v1 v1.61.0 // indirect
-	gorm.io/driver/postgres v1.0.5
-	gorm.io/driver/sqlite v1.1.3
-	gorm.io/gorm v1.20.7
+	gorm.io/driver/postgres v1.0.8
+	gorm.io/driver/sqlite v1.1.4
+	gorm.io/gorm v1.20.12
 )
 
 go 1.15
