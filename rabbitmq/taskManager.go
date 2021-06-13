@@ -72,3 +72,14 @@ func (c *TaskClient) CompleteTask(task Task) error {
 
 	return nil
 }
+
+// FailTask is to update task status as failed.
+func (c *TaskClient) FailTask(task Task) error {
+	task.Status = "failed"
+	err := c.amqpClient.Push(taskToBytes(task))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/casbin/casbin/v2"
+	"github.com/go-playground/validator/v10"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -22,7 +23,6 @@ import (
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/rabbitmq"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/websocket"
 	"golang.org/x/crypto/acme/autocert"
-	"gopkg.in/go-playground/validator.v9"
 	"net/http"
 	"os"
 )
@@ -40,7 +40,10 @@ type (
 
 // Validate is just a init
 func (cv *CustomValidator) Validate(i interface{}) error {
-	return cv.validator.Struct(i)
+	if err := cv.validator.Struct(i); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return nil
 }
 
 func (e *PolicyEnforcer) checkPolicyAccessGuests(next echo.HandlerFunc) echo.HandlerFunc {
@@ -83,7 +86,6 @@ func createTenantPolicies(policyEnforcer *casbin.Enforcer) {
 
 // @BasePath /
 func main() {
-
 	echoServer := echo.New()
 	echoServer.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "method=${method}  uri=${uri}  status=${status}\n",
@@ -130,7 +132,7 @@ func main() {
 	}()
 
 	tenantInstance := tenantModel.Model{}
-	tenantHandlerInstance := tenantHandler.CreateHandler(tenantInstance, taskManager)
+	tenantHandlerInstance := tenantHandler.CreateHandlerTenant(tenantInstance, taskManager)
 
 	policyCheck := PolicyEnforcer{enforcer: policyEnforcer}
 

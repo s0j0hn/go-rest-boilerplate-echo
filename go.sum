@@ -92,6 +92,10 @@ github.com/casbin/casbin/v2 v2.30.2 h1:g+bXYucta9vCcWlIRzeVJLkey6UAUwFqk3gg/VW10
 github.com/casbin/casbin/v2 v2.30.2/go.mod h1:vByNa/Fchek0KZUgG5wEsl7iFsiviAYKRtgrQfcJqHg=
 github.com/casbin/casbin/v2 v2.30.5 h1:wBCf2BI1OGuirQiA/zK1KMt7H4D8eWtP6mJvvC6lDqI=
 github.com/casbin/casbin/v2 v2.30.5/go.mod h1:vByNa/Fchek0KZUgG5wEsl7iFsiviAYKRtgrQfcJqHg=
+github.com/casbin/casbin/v2 v2.31.2 h1:L2RDbKhkspfUPkY12PvJ2oN2QtBQhJ5oV6bq9QfKGHo=
+github.com/casbin/casbin/v2 v2.31.2/go.mod h1:vByNa/Fchek0KZUgG5wEsl7iFsiviAYKRtgrQfcJqHg=
+github.com/casbin/casbin/v2 v2.31.3 h1:NaPzGmLYWAtEgItUjqH8aGP6cvIYOY2X4HNMusCuuzY=
+github.com/casbin/casbin/v2 v2.31.3/go.mod h1:vByNa/Fchek0KZUgG5wEsl7iFsiviAYKRtgrQfcJqHg=
 github.com/casbin/gorm-adapter/v3 v3.0.3 h1:hXGl0MvyOgo7veI9L3PEGg1nrYZz46jVohsWJl6Ue4k=
 github.com/casbin/gorm-adapter/v3 v3.0.3/go.mod h1:mQI09sqvXfy5p6kZB5HBzZrgKWwxaJ4xMWpd5OGfHRY=
 github.com/casbin/gorm-adapter/v3 v3.0.4 h1:T7JVXJt2/BTmVnNdi2JJW3GLUTktqyYIezQKLcA32GM=
@@ -205,7 +209,11 @@ github.com/go-playground/locales v0.13.0 h1:HyWk6mgj5qFqCT5fjGBuRArbVDfE4hi8+e8c
 github.com/go-playground/locales v0.13.0/go.mod h1:taPMhCMXrRLJO55olJkUXHZBHCxTMfnGwq/HNwmWNS8=
 github.com/go-playground/universal-translator v0.17.0 h1:icxd5fm+REJzpZx7ZfpaD876Lmtgy7VtROAbHHXk8no=
 github.com/go-playground/universal-translator v0.17.0/go.mod h1:UkSxE5sNxxRwHyU+Scu5vgOQjsIJAF8j9muTVoKLVtA=
+github.com/go-playground/validator v9.31.0+incompatible h1:UA72EPEogEnq76ehGdEDp4Mit+3FDh548oRqwVgNsHA=
+github.com/go-playground/validator v9.31.0+incompatible/go.mod h1:yrEkQXlcI+PugkyDjY2bRrL/UBU4f3rvrgkN3V8JEig=
 github.com/go-playground/validator/v10 v10.2.0/go.mod h1:uOYAAleCW8F/7oMFd6aG0GOhaH6EGOAJShg8Id5JGkI=
+github.com/go-playground/validator/v10 v10.6.1 h1:W6TRDXt4WcWp4c4nf/G+6BkGdhiIo0k417gfr+V6u4I=
+github.com/go-playground/validator/v10 v10.6.1/go.mod h1:xm76BBt941f7yWdGnI2DVPFFg1UK3YY04qifoXU3lOk=
 github.com/go-sql-driver/mysql v1.4.0/go.mod h1:zAC/RDZ24gD3HViQzih4MyKcchzm+sOG5ZlKdlhCg5w=
 github.com/go-sql-driver/mysql v1.5.0 h1:ozyZYNQW3x3HtqT1jira07DN2PArx2v7/mN66gGcHOs=
 github.com/go-sql-driver/mysql v1.5.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LBy8hT2VhHyBg=

@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"encoding/json"
 	"github.com/NeowayLabs/wabbit/amqptest/server"
+	"github.com/go-playground/validator/v10"
 	libUuid "github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -11,7 +13,6 @@ import (
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/database"
 	tenantModel "gitlab.com/s0j0hn/go-rest-boilerplate-echo/database/models/tenant"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/rabbitmq"
-	"gopkg.in/go-playground/validator.v9"
 	"gorm.io/gorm"
 	"net/http"
 	"net/http/httptest"
@@ -39,45 +40,56 @@ type (
 )
 
 var DbClient *gorm.DB
-var TaskManager *rabbitmq.TaskClient
+var TaskManager *rabbitmq.TaskClient = nil
+var ZeroLogger zerolog.Logger
+
 
 func (cv *CustomValidator) Validate(i interface{}) error {
-	return cv.validator.Struct(i)
+	if err := cv.validator.Struct(i); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+	return nil
 }
 
-func TestMain(m *testing.M) {
-	zeroLoggger := log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	fakeServer := server.NewServer("amqp://127.0.0.1:5672")
+func TestMain(m *testing.M) {
+	fakeServer := server.NewServer("amqp://127.0.0.1:5672/%2f")
 	err := fakeServer.Start()
 	if err != nil {
 		panic(err)
 	}
 
-	DbClient = database.ConnectForTests()
+	ZeroLogger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
 	doneChannel := make(chan bool)
 	messagesChannel := make(chan []byte)
-	rabbitMQClient := rabbitmq.NewAMQPClient("testQueue", "testQueue", "amqp://127.0.0.1:5672", zeroLoggger, doneChannel, messagesChannel, false)
+	rbbtMQClient := rabbitmq.NewAMQPClient("testQueue", "testQueue", "amqp://127.0.0.1:5672/%2f", ZeroLogger, doneChannel, messagesChannel, false)
 	doneChannel <- true
 
-	TaskManager = rabbitmq.NewTaskManagerClient(rabbitMQClient)
+	TaskManager = rabbitmq.NewTaskManagerClient(rbbtMQClient)
 
-	os.Exit(m.Run())
+	DbClient = database.ConnectForTests()
+
+	returnCode := m.Run()
+	os.Exit(returnCode)
 }
 
 func refreshTenantTable(t *testing.T) {
-	log.Log().Str("Reset table", "2")
-	err := DbClient.Exec("DROP TABLE IF EXISTS tenants").Error
+	ZeroLogger.Printf("Reset table")
+	err := DbClient.Exec("DROP TABLE IF EXISTS tenant").Error
 	if err != nil {
 		t.Errorf("Error drop tenants models: %v\n", err)
 		return
 	}
+
 
 	err = DbClient.AutoMigrate(&tenantModel.Model{})
 	if err != nil {
 		t.Errorf("Error migrate tenants models: %v\n", err)
 		return
 	}
+	ZeroLogger.Printf("Reset done")
+
 }
 
 func TestCreateTenant(t *testing.T) {
@@ -85,17 +97,20 @@ func TestCreateTenant(t *testing.T) {
 	e := echo.New()
 	e.Use(middleware.Logger())
 	e.Validator = &CustomValidator{validator: validator.New()}
+
 	req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(createTenantString))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h := &Handler{mockDBTenant, TaskManager}
+	h := &handlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.Create(c)) {
 		assert.Equal(t, http.StatusCreated, rec.Code)
-		assert.Equal(t, createTenantString+"\n", rec.Body.String())
+		var response ResultTask
+		assert.NoError(t, json.Unmarshal([]byte(rec.Body.String()), &response))
+		assert.NotNil(t, response.TaskID)
 	}
 
 	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(createWrongTenantString))
@@ -103,12 +118,12 @@ func TestCreateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &Handler{mockDBTenant, TaskManager}
+	h = &handlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.Create(c)) {
 		assert.Equal(t, http.StatusInternalServerError, rec.Code)
-		assert.Equal(t, "\"code=400, message=invalid UUID length: 4, internal=invalid UUID length: 4\"\n", rec.Body.String())
+		assert.Equal(t, "\"code=400, message=Unmarshal type error: expected=string, got=number, field=name, offset=23, internal=json: cannot unmarshal number into Go struct field tenantData.name of type string\"\n", rec.Body.String())
 	}
 
 	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(createTenantString))
@@ -116,25 +131,14 @@ func TestCreateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &Handler{mockDBTenant, TaskManager}
+	h = &handlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.Create(c)) {
-		assert.Equal(t, http.StatusInternalServerError, rec.Code)
-		assert.Equal(t, "\"UNIQUE constraint failed: tenant.name\"\n", rec.Body.String())
-	}
-
-	req = httptest.NewRequest(http.MethodPost, "/", strings.NewReader(createTenantString))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec = httptest.NewRecorder()
-	c = e.NewContext(req, rec)
-	c.SetPath("/tenants")
-	h = &Handler{mockDBTenant, TaskManager}
-
-	// Assertions
-	if assert.NoError(t, h.Create(c)) {
-		assert.Equal(t, http.StatusInternalServerError, rec.Code)
-		assert.Equal(t, "\"UNIQUE constraint failed: tenant.name\"\n", rec.Body.String())
+		assert.Equal(t, http.StatusCreated, rec.Code)
+		var response ResultTask
+		assert.NoError(t, json.Unmarshal([]byte(rec.Body.String()), &response))
+		assert.NotNil(t, response.TaskID)
 	}
 }
 
@@ -149,7 +153,7 @@ func TestGetTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues(validTenantID)
-	h := &Handler{mockDBTenant, TaskManager}
+	h := &handlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.GetOneByID(c)) {
@@ -163,7 +167,7 @@ func TestGetTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues("yolo")
-	h = &Handler{mockDBTenant, TaskManager}
+	h = &handlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.GetOneByID(c)) {
@@ -178,7 +182,7 @@ func TestGetTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues(libUuid.New().String())
-	h = &Handler{mockDBTenant, TaskManager}
+	h = &handlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.GetOneByID(c)) {
@@ -195,7 +199,7 @@ func TestGetAllTenants(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h := &Handler{mockDBTenant, TaskManager}
+	h := &handlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.GetAll(c)) {
@@ -213,7 +217,7 @@ func TestUpdateTenant(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h := &Handler{mockDBTenant, TaskManager}
+	h := &handlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
@@ -226,12 +230,12 @@ func TestUpdateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &Handler{mockDBTenant, TaskManager}
+	h = &handlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
-		assert.Equal(t, http.StatusInternalServerError, rec.Code)
-		assert.Equal(t, "\"code=400, message=invalid UUID length: 4, internal=invalid UUID length: 4\"\n", rec.Body.String())
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
+		assert.Equal(t, "\"code=500, message=Key: 'tenantData.ID' Error:Field validation for 'ID' failed on the 'uuid4' tag\"\n", rec.Body.String())
 	}
 
 	req = httptest.NewRequest(http.MethodPut, "/", strings.NewReader(updatedWrongTenantString))
@@ -239,12 +243,12 @@ func TestUpdateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &Handler{mockDBTenant, TaskManager}
+	h = &handlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
-		assert.Equal(t, http.StatusInternalServerError, rec.Code)
-		assert.Equal(t, "\"code=400, message=invalid UUID length: 4, internal=invalid UUID length: 4\"\n", rec.Body.String())
+		assert.Equal(t, http.StatusBadRequest, rec.Code)
+		assert.Equal(t, "\"code=500, message=Key: 'tenantData.ID' Error:Field validation for 'ID' failed on the 'uuid4' tag\"\n", rec.Body.String())
 	}
 
 	req = httptest.NewRequest(http.MethodPut, "/", strings.NewReader(updatedWrongTenantString2))
@@ -252,12 +256,12 @@ func TestUpdateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &Handler{mockDBTenant, TaskManager}
+	h = &handlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
-		assert.Equal(t, "\"Key: 'updateTenantData.Name' Error:Field validation for 'Name' failed on the 'required' tag\"\n", rec.Body.String())
+		assert.Equal(t, "\"code=500, message=Key: 'tenantData.Name' Error:Field validation for 'Name' failed on the 'required' tag\"\n", rec.Body.String())
 	}
 
 	req = httptest.NewRequest(http.MethodPut, "/", strings.NewReader(updatedWrongTenantString3))
@@ -265,17 +269,17 @@ func TestUpdateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &Handler{mockDBTenant, TaskManager}
+	h = &handlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
-		assert.Equal(t, "\"Key: 'updateTenantData.ID' Error:Field validation for 'ID' failed on the 'required' tag\"\n", rec.Body.String())
+		assert.Equal(t, "\"code=500, message=Key: 'tenantData.ID' Error:Field validation for 'ID' failed on the 'required' tag\"\n", rec.Body.String())
 	}
 }
 
 func TestCreateHandler(t *testing.T) {
-	h := CreateHandler(mockDBTenant, TaskManager)
+	h := CreateHandlerTenant(mockDBTenant, TaskManager)
 	assert.NotNil(t, h)
 	assert.NotNil(t, h.tenantModel)
 }
@@ -290,7 +294,7 @@ func TestDeleteTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues(validTenantID)
-	h := &Handler{mockDBTenant, TaskManager}
+	h := &handlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.DeleteByID(c)) {
@@ -304,7 +308,7 @@ func TestDeleteTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues("yolo")
-	h = &Handler{mockDBTenant, TaskManager}
+	h = &handlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.DeleteByID(c)) {
@@ -318,7 +322,7 @@ func TestDeleteTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues(libUuid.New().String())
-	h = &Handler{mockDBTenant, TaskManager}
+	h = &handlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.DeleteByID(c)) {
@@ -335,7 +339,7 @@ func TestGetAllNoTenants(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h := &Handler{mockDBTenant, TaskManager}
+	h := &handlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.GetAll(c)) {

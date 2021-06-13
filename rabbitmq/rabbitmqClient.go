@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/NeowayLabs/wabbit"
 	"github.com/NeowayLabs/wabbit/amqptest"
-	"github.com/NeowayLabs/wabbit/amqptest/server"
 	"github.com/rs/zerolog"
 	"github.com/streadway/amqp"
 	"runtime"
@@ -67,7 +66,11 @@ func NewAMQPClient(listenQueue, pushQueue, addr string, l zerolog.Logger, done c
 		isReal: 		 isReal,
 	}
 
-	client.wg.Add(threads)
+	if isReal {
+		client.wg.Add(threads)
+	} else {
+		client.wg.Add(1)
+	}
 
 	go client.handleReconnect(addr)
 	return &client
@@ -107,27 +110,14 @@ func (c *AMQPClient) handleReconnect(addr string) {
 			}
 		}
 	} else {
+		c.logger.Printf("Creating a fake client to rabbitMQ: %s", addr)
 		for c.alive {
-			var retryCount int
-			c.logger.Printf("Attempting to connect to rabbitMQ: %s", addr)
+			c.logger.Printf("Attempting to connect to false rabbitMQ: %s", addr)
 
 			c.isConnected = false
 			t := time.Now()
 
-			for !c.connect(addr) {
-				if !c.alive {
-					return
-				}
-
-				select {
-				case <-c.doneChannel:
-					c.logger.Printf("Received something into done amqpChannel")
-					return
-				case <-time.After(reconnectDelay + time.Duration(retryCount)*time.Second):
-					c.logger.Printf("disconnected from rabbitMQ and failed to connect")
-					retryCount++
-				}
-			}
+			c.connect(addr)
 
 			c.logger.Printf("Connected to rabbitMQ in: %vms", time.Since(t).Milliseconds())
 			select {
@@ -192,54 +182,49 @@ func (c *AMQPClient) connect(addr string) bool {
 		c.isConnected = true
 
 		return true
-	} else {
-		fakeServer := server.NewServer("amqp://127.0.0.1:5672")
-		err := fakeServer.Start()
-		if err != nil {
-			panic(err)
-		}
-		conn, err := amqptest.Dial(addr)
-
-		ch, err := conn.Channel()
-		if err != nil {
-			c.logger.Printf("failed connecting to amqpChannel: %v", err)
-			return false
-		}
-
-		err = ch.Confirm(false)
-		if err != nil {
-			c.logger.Printf("failed to confirm amqpChannel: %v", err)
-			return false
-		}
-
-		options := wabbit.Option{
-			"durable":    true,
-			"autoDelete": false,
-			"exclusive":  false,
-			"noWait":     false,
-		}
-
-		_, err = ch.QueueDeclare(c.listenQueue, options)
-		if err != nil {
-			c.logger.Printf("failed to declare listen queue: %v", err)
-			return false
-		}
-		
-		_, err = ch.QueueDeclare(c.pushQueue, options)
-
-		if err != nil {
-			c.logger.Printf("failed to declare push queue: %v", err)
-			return false
-		}
-
-		c.logger.Printf("Connected")
-
-
-		c.changeConnection(conn, ch)
-		c.isConnected = true
-
-		return true
 	}
+
+	conn, err := amqptest.Dial(addr)
+
+	ch, err := conn.Channel()
+	if err != nil {
+		c.logger.Printf("failed connecting to amqpChannel: %v", err)
+		return false
+	}
+
+	err = ch.Confirm(false)
+	if err != nil {
+		c.logger.Printf("failed to confirm amqpChannel: %v", err)
+		return false
+	}
+
+	options := wabbit.Option{
+		"durable":    true,
+		"autoDelete": false,
+		"exclusive":  false,
+		"noWait":     false,
+	}
+
+	_, err = ch.QueueDeclare(c.listenQueue, options)
+	if err != nil {
+		c.logger.Printf("failed to declare listen queue: %v", err)
+		return false
+	}
+
+	_, err = ch.QueueDeclare(c.pushQueue, options)
+
+	if err != nil {
+		c.logger.Printf("failed to declare push queue: %v", err)
+		return false
+	}
+
+	c.logger.Printf("Connected")
+
+
+	c.changeConnection(conn, ch)
+	c.isConnected = true
+
+	return true
 }
 
 // changeRealConnection takes a new connection to the queue,
@@ -285,12 +270,16 @@ func (c *AMQPClient) Push(data []byte) error {
 			return err
 		}
 
-		select {
-		case confirm := <-c.notifyConfirm:
-			if confirm.Ack {
-				return nil
+		if c.isReal {
+			select {
+			case confirm := <-c.notifyConfirm:
+				if confirm.Ack {
+					return nil
+				}
+			case <-time.After(1 * time.Second):
 			}
-		case <-time.After(1 * time.Second):
+		} else {
+			return nil
 		}
 	}
 }
@@ -318,6 +307,7 @@ func (c *AMQPClient) UnsafePush(data []byte) error {
 		)
 	}
 
+	c.logger.Printf("Pushing message for tests")
 	return c.falseChannel.Publish(
 		"",
 		c.pushQueue,
@@ -466,14 +456,26 @@ func (c *AMQPClient) Close() error {
 
 	c.activeConsumers = nil
 
-	err := c.amqpChannel.Close()
-	if err != nil {
-		return err
-	}
+	if c.isReal {
+		err := c.amqpChannel.Close()
+		if err != nil {
+			return err
+		}
 
-	err = c.connection.Close()
-	if err != nil {
-		return err
+		err = c.connection.Close()
+		if err != nil {
+			return err
+		}
+	} else {
+		err := c.falseChannel.Close()
+		if err != nil {
+			return err
+		}
+
+		err = c.falseConnection.Close()
+		if err != nil {
+			return err
+		}
 	}
 
 	c.isConnected = false

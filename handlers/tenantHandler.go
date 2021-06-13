@@ -9,29 +9,24 @@ import (
 )
 
 type (
-	// Handler is a default handler as there is no generics.
-	Handler struct {
+	// handlerTenant is a default handler as there is no generics.
+	handlerTenant struct {
 		tenantModel tenantModel.Model
 		taskManager *rabbitmq.TaskClient
 	}
 
 	resultJSON struct {
-		ID   libUUID.UUID `json:"id" form:"id" format:"uuid" validate:"required"`
-		Name string       `json:"name" form:"name" validate:"required"`
+		ID   libUUID.UUID `json:"id" validate:"required"`
+		Name string       `json:"name" validate:"required"`
 	}
 
-	resultTask struct {
-		TaskID libUUID.UUID `json:"taskId" form:"taskId" format:"uuid" validate:"required"`
+	ResultTask struct {
+		TaskID libUUID.UUID `json:"taskId" validate:"required"`
 	}
 
-	postTenantData struct {
-		ID   string `json:"id" form:"id" format:"uuid" validate:"required"`
-		Name string `json:"name" form:"name" validate:"required"`
-	}
-
-	updateTenantData struct {
-		ID   libUUID.UUID `json:"id" form:"id" format:"uuid" validate:"required"`
-		Name string       `json:"name" form:"name" validate:"required"`
+	tenantData struct {
+		ID   string `json:"id" validate:"required,uuid4"`
+		Name string `json:"name" validate:"required"`
 	}
 
 	errorResult struct {
@@ -39,9 +34,9 @@ type (
 	}
 )
 
-// CreateHandler is always in each Handler
-func CreateHandler(tenant tenantModel.Model, taskClient *rabbitmq.TaskClient) *Handler {
-	return &Handler{tenant, taskClient}
+// CreateHandlerTenant is always in each handlerTenant
+func CreateHandlerTenant(tenant tenantModel.Model, taskClient *rabbitmq.TaskClient) *handlerTenant {
+	return &handlerTenant{tenant, taskClient}
 }
 
 // GetAll godoc
@@ -53,7 +48,7 @@ func CreateHandler(tenant tenantModel.Model, taskClient *rabbitmq.TaskClient) *H
 // @Success 200 {array} handlers.resultJSON
 // @Failure 500 {object} handlers.errorResult
 // @Router /tenants [get]
-func (h Handler) GetAll(c echo.Context) error {
+func (h handlerTenant) GetAll(c echo.Context) error {
 	tenants, err := h.tenantModel.GetAll()
 	if err != nil {
 		c.Logger().Error(err.Error())
@@ -85,7 +80,7 @@ func (h Handler) GetAll(c echo.Context) error {
 // @Failure 400 {object} handlers.errorResult
 // @Failure 404 {object} handlers.errorResult
 // @Router /tenants/{id} [get]
-func (h Handler) GetOneByID(c echo.Context) error {
+func (h handlerTenant) GetOneByID(c echo.Context) error {
 	tenantID, err := libUUID.Parse(c.Param("id"))
 	if err != nil {
 		c.Logger().Error(err.Error())
@@ -97,6 +92,10 @@ func (h Handler) GetOneByID(c echo.Context) error {
 	tenant, err := h.tenantModel.GetOne()
 	if err != nil {
 		c.Logger().Error(err.Error())
+		return c.JSON(http.StatusNotFound, nil)
+	}
+
+	if tenant == nil {
 		return c.JSON(http.StatusNotFound, nil)
 	}
 
@@ -112,13 +111,13 @@ func (h Handler) GetOneByID(c echo.Context) error {
 // @Tags tenants
 // @Accept  json
 // @Produce  json
-// @Param tenant body handlers.postTenantData true "Add tenant"
-// @Success 201 {object} handlers.resultTask
+// @Param tenant body handlers.tenantData true "Add tenant"
+// @Success 201 {object} handlers.ResultTask
 // @Failure 400 {object} handlers.errorResult
 // @Failure 500 {object} handlers.errorResult
 // @Router /tenants [post]
-func (h Handler) Create(c echo.Context) error {
-	newTenantData := new(postTenantData)
+func (h handlerTenant) Create(c echo.Context) error {
+	newTenantData := new(tenantData)
 
 	if err := c.Bind(newTenantData); err != nil {
 		c.Logger().Error(err.Error())
@@ -130,29 +129,39 @@ func (h Handler) Create(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	h.tenantModel.UUID = libUUID.MustParse(newTenantData.ID)
+	id, err := libUUID.Parse(newTenantData.ID)
+	if err != nil {
+		c.Logger().Error(err.Error())
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	h.tenantModel.UUID = id
 	h.tenantModel.Name = newTenantData.Name
 
 	task := rabbitmq.CreateNewTask([]string{"create", "tenant"}, "Creating tenant "+newTenantData.Name)
-	err := h.taskManager.PushTask(task)
+	err = h.taskManager.PushTask(task)
 	if err != nil {
 		c.Logger().Error(err.Error())
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
-	_, err = h.tenantModel.Save()
-	if err != nil {
-		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusInternalServerError, err.Error())
-	}
+	go func() {
+		_, err = h.tenantModel.Save()
+		if err != nil {
+			c.Logger().Error(err.Error())
+			err = h.taskManager.FailTask(task)
+			if err != nil {
+				c.Logger().Error(err.Error())
+			}
+		} else {
+			err = h.taskManager.CompleteTask(task)
+			if err != nil {
+				c.Logger().Error(err.Error())
+			}
+		}
+	}()
 
-	err = h.taskManager.CompleteTask(task)
-	if err != nil {
-		c.Logger().Error(err.Error())
-		return c.JSON(http.StatusInternalServerError, err.Error())
-	}
-
-	return c.JSON(http.StatusCreated, resultTask{
+	return c.JSON(http.StatusCreated, ResultTask{
 		TaskID: task.ID,
 	})
 }
@@ -163,13 +172,13 @@ func (h Handler) Create(c echo.Context) error {
 // @Tags tenants
 // @Accept  json
 // @Produce  json
-// @Param tenant body handlers.postTenantData true "Update tenant"
+// @Param tenant body handlers.tenantData true "Update tenant"
 // @Success 200 {object} handlers.resultJSON
 // @Failure 400 {object} handlers.errorResult
 // @Failure 500 {object} handlers.errorResult
 // @Router /tenants [put]
-func (h Handler) Update(c echo.Context) error {
-	post := new(updateTenantData)
+func (h handlerTenant) Update(c echo.Context) error {
+	post := new(tenantData)
 
 	if err := c.Bind(post); err != nil {
 		c.Logger().Error(err.Error())
@@ -181,7 +190,13 @@ func (h Handler) Update(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	h.tenantModel.UUID = post.ID
+	id, err := libUUID.Parse(post.ID)
+	if err != nil {
+		c.Logger().Error(err.Error())
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	h.tenantModel.UUID = id
 	h.tenantModel.Name = post.Name
 
 	tenant, err := h.tenantModel.Update()
@@ -206,7 +221,7 @@ func (h Handler) Update(c echo.Context) error {
 // @Success 200 {object} handlers.resultJSON
 // @Failure 404 {object} handlers.errorResult
 // @Router /tenants/{id} [delete]
-func (h Handler) DeleteByID(c echo.Context) error {
+func (h handlerTenant) DeleteByID(c echo.Context) error {
 	tenantID, err := libUUID.Parse(c.Param("id"))
 	if err != nil {
 		c.Logger().Error(err.Error())
