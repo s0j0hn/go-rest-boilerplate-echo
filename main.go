@@ -117,7 +117,7 @@ func main() {
 	doneChannel := make(chan bool)
 	messagesChannel := make(chan []byte)
 	amqpContext := context.Background()
-	rabbitMQClient := rabbitmq.NewAMQPClient(config.GetAMQPQListenQueue(), config.GetAMQPPushQueue(), config.GetRabbitMQAccess(), zeroLoggger, doneChannel, messagesChannel,true)
+	rabbitMQClient := rabbitmq.NewAMQPClient(config.GetAMQPQListenQueue(), config.GetAMQPPushQueue(), config.GetRabbitMQAccess(), zeroLoggger, doneChannel, messagesChannel, true)
 	doneChannel <- true
 	taskManager := rabbitmq.NewTaskManagerClient(rabbitMQClient)
 

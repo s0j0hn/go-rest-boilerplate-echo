@@ -26,7 +26,7 @@ const (
 
 // AMQPClient holds necessery information for rabbitMQ
 type AMQPClient struct {
-	isReal			bool
+	isReal             bool
 	pushQueue          string
 	listenQueue        string
 	logger             zerolog.Logger
@@ -63,7 +63,7 @@ func NewAMQPClient(listenQueue, pushQueue, addr string, l zerolog.Logger, done c
 		alive:           true,
 		wg:              &sync.WaitGroup{},
 		messagesChannel: messages,
-		isReal: 		 isReal,
+		isReal:          isReal,
 	}
 
 	if isReal {
@@ -219,7 +219,6 @@ func (c *AMQPClient) connect(addr string) bool {
 	}
 
 	c.logger.Printf("Connected")
-
 
 	c.changeConnection(conn, ch)
 	c.isConnected = true

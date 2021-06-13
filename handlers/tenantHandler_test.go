@@ -43,14 +43,12 @@ var DbClient *gorm.DB
 var TaskManager *rabbitmq.TaskClient = nil
 var ZeroLogger zerolog.Logger
 
-
 func (cv *CustomValidator) Validate(i interface{}) error {
 	if err := cv.validator.Struct(i); err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 	return nil
 }
-
 
 func TestMain(m *testing.M) {
 	fakeServer := server.NewServer("amqp://127.0.0.1:5672/%2f")
@@ -81,7 +79,6 @@ func refreshTenantTable(t *testing.T) {
 		t.Errorf("Error drop tenants models: %v\n", err)
 		return
 	}
-
 
 	err = DbClient.AutoMigrate(&tenantModel.Model{})
 	if err != nil {
