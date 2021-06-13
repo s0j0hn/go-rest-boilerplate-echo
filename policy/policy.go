@@ -22,7 +22,7 @@ func InitPolicy(gormClient *gorm.DB) (*casbin.Enforcer, error) {
 
 	// We need a new roleManager to force the route params verification ex: (/tenants/:id).
 	var roleManager = defaultrolemanager.NewRoleManager(2)
-	roleManager.(*defaultrolemanager.RoleManager).AddMatchingFunc("KeyMatch2", util.KeyMatch2)
+	roleManager.AddMatchingFunc("KeyMatch2", util.KeyMatch2)
 
 	// Create Policy enforcer with our customized model.
 	policyEnforcer, err := casbin.NewEnforcer("config/keymatch_model", casbinGormAdapter)

@@ -3,6 +3,7 @@ version: '3.5'
 services:
   rabbitmq:
     image: 'rabbitmq:3.6-management-alpine'
+    hostname: rabbitmq
     ports:
       # The standard AMQP protocol port
       - '5672:5672'
@@ -17,21 +18,19 @@ services:
       RABBITMQ_DEFAULT_USER: "guest"
       RABBITMQ_DEFAULT_PASS: "guest"
     networks:
-      - local
+      - boilerplate-local
   postgres:
     image: 'postgres:13-alpine'
+    hostname: postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-boilerplate}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-boilerplate}
-      POSTGRES_DB: ${POSTGRES_DB:-boilerplate}
+      POSTGRES_USER: boilerplate
+      POSTGRES_PASSWORD: boilerplate
+      POSTGRES_DB: boilerplate
     ports:
-      - "5432:5432"
+      - 5432:5432
     networks:
-      - local
+      - boilerplate-local
 
 networks:
-  local:
+  boilerplate-local:
     driver: overlay
-
-volumes:
-  postgres:
