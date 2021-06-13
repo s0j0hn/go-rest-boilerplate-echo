@@ -25,13 +25,16 @@ func TestMain(m *testing.M) {
 }
 
 func refreshTenantTable() (err error) {
-	err = DbClient.Exec("DROP TABLE IF EXISTS tenants").Error
+	err = DbClient.Exec("DROP TABLE IF EXISTS tenant").Error
 	if err != nil {
 		log.Fatalf("Cannot refresh tenant table: %v", err)
 		return err
 	}
 
-	DbClient.AutoMigrate(&Model{})
+	err = DbClient.AutoMigrate(&Model{})
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
