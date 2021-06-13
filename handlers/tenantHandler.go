@@ -9,8 +9,8 @@ import (
 )
 
 type (
-	// handlerTenant is a default handler as there is no generics.
-	handlerTenant struct {
+	// HandlerTenant is a default handler as there is no generics.
+	HandlerTenant struct {
 		tenantModel tenantModel.Model
 		taskManager *rabbitmq.TaskClient
 	}
@@ -20,6 +20,7 @@ type (
 		Name string       `json:"name" validate:"required"`
 	}
 
+	// ResultTask Response given by task processing endpoint
 	ResultTask struct {
 		TaskID libUUID.UUID `json:"taskId" validate:"required"`
 	}
@@ -34,9 +35,9 @@ type (
 	}
 )
 
-// CreateHandlerTenant is always in each handlerTenant
-func CreateHandlerTenant(tenant tenantModel.Model, taskClient *rabbitmq.TaskClient) *handlerTenant {
-	return &handlerTenant{tenant, taskClient}
+// CreateHandlerTenant is always in each HandlerTenant
+func CreateHandlerTenant(tenant tenantModel.Model, taskClient *rabbitmq.TaskClient) *HandlerTenant {
+	return &HandlerTenant{tenant, taskClient}
 }
 
 // GetAll godoc
@@ -48,7 +49,7 @@ func CreateHandlerTenant(tenant tenantModel.Model, taskClient *rabbitmq.TaskClie
 // @Success 200 {array} handlers.resultJSON
 // @Failure 500 {object} handlers.errorResult
 // @Router /tenants [get]
-func (h handlerTenant) GetAll(c echo.Context) error {
+func (h HandlerTenant) GetAll(c echo.Context) error {
 	tenants, err := h.tenantModel.GetAll()
 	if err != nil {
 		c.Logger().Error(err.Error())
@@ -80,7 +81,7 @@ func (h handlerTenant) GetAll(c echo.Context) error {
 // @Failure 400 {object} handlers.errorResult
 // @Failure 404 {object} handlers.errorResult
 // @Router /tenants/{id} [get]
-func (h handlerTenant) GetOneByID(c echo.Context) error {
+func (h HandlerTenant) GetOneByID(c echo.Context) error {
 	tenantID, err := libUUID.Parse(c.Param("id"))
 	if err != nil {
 		c.Logger().Error(err.Error())
@@ -116,7 +117,7 @@ func (h handlerTenant) GetOneByID(c echo.Context) error {
 // @Failure 400 {object} handlers.errorResult
 // @Failure 500 {object} handlers.errorResult
 // @Router /tenants [post]
-func (h handlerTenant) Create(c echo.Context) error {
+func (h HandlerTenant) Create(c echo.Context) error {
 	newTenantData := new(tenantData)
 
 	if err := c.Bind(newTenantData); err != nil {
@@ -177,7 +178,7 @@ func (h handlerTenant) Create(c echo.Context) error {
 // @Failure 400 {object} handlers.errorResult
 // @Failure 500 {object} handlers.errorResult
 // @Router /tenants [put]
-func (h handlerTenant) Update(c echo.Context) error {
+func (h HandlerTenant) Update(c echo.Context) error {
 	post := new(tenantData)
 
 	if err := c.Bind(post); err != nil {
@@ -221,7 +222,7 @@ func (h handlerTenant) Update(c echo.Context) error {
 // @Success 200 {object} handlers.resultJSON
 // @Failure 404 {object} handlers.errorResult
 // @Router /tenants/{id} [delete]
-func (h handlerTenant) DeleteByID(c echo.Context) error {
+func (h HandlerTenant) DeleteByID(c echo.Context) error {
 	tenantID, err := libUUID.Parse(c.Param("id"))
 	if err != nil {
 		c.Logger().Error(err.Error())

@@ -100,7 +100,7 @@ func TestCreateTenant(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h := &handlerTenant{mockDBTenant, TaskManager}
+	h := &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.Create(c)) {
@@ -115,7 +115,7 @@ func TestCreateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handlerTenant{mockDBTenant, TaskManager}
+	h = &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.Create(c)) {
@@ -128,7 +128,7 @@ func TestCreateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handlerTenant{mockDBTenant, TaskManager}
+	h = &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.Create(c)) {
@@ -150,7 +150,7 @@ func TestGetTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues(validTenantID)
-	h := &handlerTenant{mockDBTenant, TaskManager}
+	h := &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.GetOneByID(c)) {
@@ -164,7 +164,7 @@ func TestGetTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues("yolo")
-	h = &handlerTenant{mockDBTenant, TaskManager}
+	h = &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.GetOneByID(c)) {
@@ -179,7 +179,7 @@ func TestGetTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues(libUuid.New().String())
-	h = &handlerTenant{mockDBTenant, TaskManager}
+	h = &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.GetOneByID(c)) {
@@ -196,7 +196,7 @@ func TestGetAllTenants(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h := &handlerTenant{mockDBTenant, TaskManager}
+	h := &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.GetAll(c)) {
@@ -214,7 +214,7 @@ func TestUpdateTenant(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h := &handlerTenant{mockDBTenant, TaskManager}
+	h := &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
@@ -227,7 +227,7 @@ func TestUpdateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handlerTenant{mockDBTenant, TaskManager}
+	h = &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
@@ -240,7 +240,7 @@ func TestUpdateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handlerTenant{mockDBTenant, TaskManager}
+	h = &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
@@ -253,7 +253,7 @@ func TestUpdateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handlerTenant{mockDBTenant, TaskManager}
+	h = &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
@@ -266,7 +266,7 @@ func TestUpdateTenant(t *testing.T) {
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h = &handlerTenant{mockDBTenant, TaskManager}
+	h = &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.Update(c)) {
@@ -291,7 +291,7 @@ func TestDeleteTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues(validTenantID)
-	h := &handlerTenant{mockDBTenant, TaskManager}
+	h := &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.DeleteByID(c)) {
@@ -305,7 +305,7 @@ func TestDeleteTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues("yolo")
-	h = &handlerTenant{mockDBTenant, TaskManager}
+	h = &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.DeleteByID(c)) {
@@ -319,7 +319,7 @@ func TestDeleteTenant(t *testing.T) {
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
 	c.SetParamValues(libUuid.New().String())
-	h = &handlerTenant{mockDBTenant, TaskManager}
+	h = &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.DeleteByID(c)) {
@@ -336,7 +336,7 @@ func TestGetAllNoTenants(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	c.SetPath("/tenants")
-	h := &handlerTenant{mockDBTenant, TaskManager}
+	h := &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.GetAll(c)) {
