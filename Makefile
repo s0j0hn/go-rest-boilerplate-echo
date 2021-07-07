@@ -12,7 +12,7 @@ dep:
 	@go mod download
 	@echo DONE
 
-build: swagger
+build:
 	@echo COMPILING...
 	@go build -o dist/server
 	@echo DONE

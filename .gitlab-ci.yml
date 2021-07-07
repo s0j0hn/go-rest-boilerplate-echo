@@ -11,15 +11,16 @@ cache:
   - "/go/src/google.golang.org"
   - "/go/src/gopkg.in"
 stages:
-- build
-- test
-- sast
+  - build
+  - test
+  - sast
+
 before_script:
-- mkdir -p /go/src/gitlab.com/s0j0hn /go/src/_/builds
-- cp -r $CI_PROJECT_DIR /go/src/gitlab.com/s0j0hn/go-rest-boilerplate-echo
-- ln -s /go/src/gitlab.com/s0j0hn /go/src/_/builds/s0j0hn
-- export CC=clang
-- make dep
+  - mkdir -p /go/src/gitlab.com/s0j0hn /go/src/_/builds
+  - cp -r $CI_PROJECT_DIR /go/src/gitlab.com/s0j0hn/go-rest-boilerplate-echo
+  - ln -s /go/src/gitlab.com/s0j0hn /go/src/_/builds/s0j0hn
+  - export CC=clang
+
 unit_tests:
   stage: test
   except:
@@ -27,7 +28,20 @@ unit_tests:
   allow_failure: true
   retry: 2
   script:
-  - make test
+    - make dep
+    - make test
+
+#race_detector:
+#  stage: test
+#  script:
+#    - make race
+#
+#memory_sanitizer:
+#  stage: test
+#  script:
+#    - uname -r; echo $(gcc -v 2>&1 | grep version); echo $(clang -v 2>&1 | grep version); go version
+#    - make msan
+
 code_coverage:
   stage: test
   script:
@@ -37,9 +51,12 @@ build:
   except:
     - tags
   script:
-  - go get -u github.com/swaggo/swag/cmd/swag
-  - make build
-sast:
-  stage: sast
+    - go get -u github.com/swaggo/swag/cmd/swag
+    - make dep
+    - make build
+
 include:
-- template: Security/SAST.gitlab-ci.yml
+  - template: Security/SAST.gitlab-ci.yml
+
+variables:
+  SAST_EXPERIMENTAL_FEATURES: "true"
