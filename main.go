@@ -195,6 +195,7 @@ func main() {
 				//Certificates: nil, // <-- s.ListenAndServeTLS will populate this field
 				GetCertificate: autoTLSManager.GetCertificate,
 				NextProtos:     []string{acme.ALPNProto},
+				MinVersion:		tls.VersionTLS12,
 			},
 			//ReadTimeout: 30 * time.Second, // use custom timeouts
 		}
