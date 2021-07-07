@@ -21,6 +21,8 @@ before_script:
 
 unit_tests:
   stage: test
+  except:
+    - tags
   allow_failure: true
   retry: 2
   script:
@@ -49,6 +51,8 @@ code_coverage:
 
 build:
   stage: build
+  except:
+    - tags
   script:
     - go get -u github.com/swaggo/swag/cmd/swag
     - make build

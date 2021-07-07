@@ -3,6 +3,8 @@
 - github.com/labstack/echo 
 - github.com/jinzhu/gorm
 - github.com/casbin/casbin/v2
+- github.com/spf13/viper
+- github.com/swaggo/swag
 
 
 ## Requirements
@@ -11,8 +13,8 @@
 
 ```
 brew install goenv
-goenv install 1.14.x
-goenv global 1.14.x
+goenv install 1.16.x
+goenv global 1.16.x
 goenv rehash
 ```
 
@@ -47,6 +49,6 @@ $ go run ./migrate/migrate.go
 ## Launch the server
 
 ``` sh
-$ make postgres  // Setup local database with docker compose
+$ make start-services  // Setup local database with docker compose
 $ make serve
 ```

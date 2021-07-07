@@ -5,19 +5,22 @@ PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/)
 GO_FILES := $(shell find . -name '*.go' | grep -v /vendor/ | grep -v _test.go)
 
 all:build test serve
-	@echo DONE!
+	@echo DONE
 
 dep:
 	@echo DOWONLOADING MODULES...
 	@go mod download
+	@echo DONE
 
 build: swagger
-	@echo GENERATING CODE...
+	@echo COMPILING...
 	@go build -o dist/server
+	@echo DONE
 
 swagger:
 	@echo GENERATING SWAGGER...
 	@swag init
+	@echo DONE
 
 start-services:
 	@echo STARTING DOCKER SERVICES...
@@ -30,6 +33,7 @@ stop-services:
 test:
 	@echo UNIT TESTING...
 	@go test ./... -v -cover -coverprofile=coverage.cov
+	@echo DONE
 
 msan:
 	@echo MEMORY TESTING...
