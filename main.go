@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"github.com/casbin/casbin/v2"
 	"github.com/go-playground/validator/v10"
@@ -22,9 +23,12 @@ import (
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/policy"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/rabbitmq"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/websocket"
+	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 	"net/http"
 	"os"
+	"os/signal"
+	"time"
 )
 
 type (
@@ -152,16 +156,67 @@ func main() {
 		AllowMethods: []string{http.MethodGet, http.MethodHead, http.MethodPut, http.MethodPost, http.MethodDelete},
 	}))
 
+	rateLimiterConfig := middleware.RateLimiterConfig{
+		Skipper: middleware.DefaultSkipper,
+		Store: middleware.NewRateLimiterMemoryStoreWithConfig(
+			middleware.RateLimiterMemoryStoreConfig{Rate: 10, Burst: 30, ExpiresIn: 3 * time.Minute},
+		),
+		IdentifierExtractor: func(ctx echo.Context) (string, error) {
+			id := ctx.RealIP()
+			return id, nil
+		},
+		ErrorHandler: func(context echo.Context, err error) error {
+			return context.JSON(http.StatusForbidden, nil)
+		},
+		DenyHandler: func(context echo.Context, identifier string, err error) error {
+			return context.JSON(http.StatusTooManyRequests, nil)
+		},
+	}
+
+	echoServer.Use(middleware.RateLimiterWithConfig(rateLimiterConfig))
+
 	go websocket.CreateServer(messagesChannel)
 
 	if config.IsProd() {
+		autoTLSManager := autocert.Manager{
+			Prompt: autocert.AcceptTOS,
+			// Cache certificates to avoid issues with rate limits (https://letsencrypt.org/docs/rate-limits)
+			Cache: autocert.DirCache("./.cache"),
+			//HostPolicy: autocert.HostWhitelist("<DOMAIN>"),
+		}
+
 		echoServer.AutoTLSManager.Cache = autocert.DirCache("./.cache")
 		echoServer.Pre(middleware.HTTPSRedirect())
-		go func(c *echo.Echo) {
-			echoServer.Logger.Fatal(echoServer.Start(":80"))
-		}(echoServer)
-		echoServer.Logger.Fatal(echoServer.StartAutoTLS(":443"))
+
+		s := http.Server{
+			Addr:    ":443",
+			Handler: echoServer, // set Echo as handler
+			TLSConfig: &tls.Config{
+				//Certificates: nil, // <-- s.ListenAndServeTLS will populate this field
+				GetCertificate: autoTLSManager.GetCertificate,
+				NextProtos:     []string{acme.ALPNProto},
+			},
+			//ReadTimeout: 30 * time.Second, // use custom timeouts
+		}
+		if err := s.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
+			echoServer.Logger.Fatal(err)
+		}
 	} else {
-		echoServer.Logger.Fatal(echoServer.Start(config.GetAddress()))
+		go func(c *echo.Echo) {
+			if err := echoServer.Start(config.GetAddress()); err != nil && err != http.ErrServerClosed {
+				echoServer.Logger.Fatal("shutting down the server")
+			}
+		}(echoServer)
+	}
+
+	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds.
+	// Use a buffered channel to avoid missing signals as recommended for signal.Notify
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := echoServer.Shutdown(ctx); err != nil {
+		echoServer.Logger.Fatal(err)
 	}
 }

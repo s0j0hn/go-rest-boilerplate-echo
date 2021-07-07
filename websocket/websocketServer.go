@@ -42,6 +42,7 @@ func (h Handler) getTaskEvents(c echo.Context) error {
 	}
 }
 
+// CreateServer Creates a web socket server
 func CreateServer(amqpMessages chan []byte) {
 	e := echo.New()
 
