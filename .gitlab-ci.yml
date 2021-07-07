@@ -18,7 +18,6 @@ before_script:
   - cp -r $CI_PROJECT_DIR /go/src/gitlab.com/s0j0hn/go-rest-boilerplate-echo
   - ln -s /go/src/gitlab.com/s0j0hn /go/src/_/builds/s0j0hn
   - export CC=clang
-  - make dep
 
 unit_tests:
   stage: test
@@ -27,6 +26,7 @@ unit_tests:
   allow_failure: true
   retry: 2
   script:
+    - make dep
     - make test
 
 #race_detector:
@@ -56,6 +56,7 @@ build:
     - tags
   script:
     - go get -u github.com/swaggo/swag/cmd/swag
+    - make dep
     - make build
 
 include:
