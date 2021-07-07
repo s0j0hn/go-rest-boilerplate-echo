@@ -61,10 +61,10 @@ build:
 include:
   - template: Security/SAST.gitlab-ci.yml
 
+variables:
+  SAST_EXPERIMENTAL_FEATURES: "true"
+
 sast:
-  except:
-    - tags
-  stage: sast
   before_script:
     - mkdir -p /go/src/gitlab.com/s0j0hn /go/src/_/builds
     - cp -r $CI_PROJECT_DIR /go/src/gitlab.com/s0j0hn/go-rest-boilerplate-echo
