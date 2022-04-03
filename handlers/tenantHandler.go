@@ -11,7 +11,7 @@ import (
 type (
 	// HandlerTenant is a default handler as there is no generics.
 	HandlerTenant struct {
-		tenantModel tenantModel.Model
+		tenantModel tenantModel.ModelTenant
 		taskManager *rabbitmq.TaskClient
 	}
 
@@ -36,7 +36,7 @@ type (
 )
 
 // CreateHandlerTenant is always in each HandlerTenant
-func CreateHandlerTenant(tenant tenantModel.Model, taskClient *rabbitmq.TaskClient) *HandlerTenant {
+func CreateHandlerTenant(tenant tenantModel.ModelTenant, taskClient *rabbitmq.TaskClient) *HandlerTenant {
 	return &HandlerTenant{tenant, taskClient}
 }
 
@@ -97,6 +97,10 @@ func (h HandlerTenant) GetOneByID(c echo.Context) error {
 	}
 
 	if tenant == nil {
+		return c.JSON(http.StatusNotFound, nil)
+	}
+
+	if tenant.Name == "" {
 		return c.JSON(http.StatusNotFound, nil)
 	}
 
