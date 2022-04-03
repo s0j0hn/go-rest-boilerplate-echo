@@ -8,7 +8,7 @@ import (
 // RunMigrateDatabase is used to prepare for the database
 func RunMigrateDatabase() {
 	databaseClient := database.Connect()
-	err := databaseClient.AutoMigrate(&tenantModel.Model{})
+	err := databaseClient.AutoMigrate(&tenantModel.ModelTenant{})
 	if err != nil {
 		panic(err)
 	}

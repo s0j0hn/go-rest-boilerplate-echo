@@ -31,7 +31,7 @@ func refreshTenantTable() (err error) {
 		return err
 	}
 
-	err = DbClient.AutoMigrate(&Model{})
+	err = DbClient.AutoMigrate(&ModelTenant{})
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func refreshTenantTable() (err error) {
 }
 
 func seedTenants() error {
-	tenants := []Model{
+	tenants := []ModelTenant{
 		{
 			Name: "Bob",
 		},
@@ -66,7 +66,7 @@ func seedOneTenant() {
 		return
 	}
 
-	tenant := Model{
+	tenant := ModelTenant{
 		Name: "Greg",
 		UUID: libUuid.MustParse(validTenantID),
 	}
@@ -90,7 +90,7 @@ func TestGetAllTenants(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tenantInstance := Model{}
+	tenantInstance := ModelTenant{}
 
 	tenants, err := tenantInstance.GetAll()
 	if err != nil {
@@ -109,7 +109,7 @@ func TestSaveTenant(t *testing.T) {
 		return
 	}
 
-	newUser := Model{
+	newUser := ModelTenant{
 		UUID: libUuid.New(),
 		Name: "Test",
 	}
@@ -133,7 +133,7 @@ func TestWrongSaveTenant(t *testing.T) {
 		return
 	}
 
-	newUser := Model{
+	newUser := ModelTenant{
 		UUID: libUuid.New(),
 		Name: "",
 	}
@@ -154,7 +154,7 @@ func TestGetTenantByID(t *testing.T) {
 	}
 
 	seedOneTenant()
-	tenantInstance := Model{UUID: libUuid.MustParse(validTenantID)}
+	tenantInstance := ModelTenant{UUID: libUuid.MustParse(validTenantID)}
 
 	foundTenant, err := tenantInstance.GetOne()
 	assert.NoError(t, err)
@@ -170,7 +170,7 @@ func TestGetWrongTenantByID(t *testing.T) {
 	}
 
 	seedOneTenant()
-	tenantInstance := Model{UUID: libUuid.New()}
+	tenantInstance := ModelTenant{UUID: libUuid.New()}
 
 	foundTenant, err := tenantInstance.GetOne()
 
@@ -189,7 +189,7 @@ func TestUpdateTenant(t *testing.T) {
 
 	seedOneTenant()
 
-	existingTenant := Model{
+	existingTenant := ModelTenant{
 		UUID: libUuid.MustParse(validTenantID),
 		Name: "Gregory",
 	}
@@ -213,7 +213,7 @@ func TestDeleteTenant(t *testing.T) {
 	}
 
 	seedOneTenant()
-	tenantInstance := Model{
+	tenantInstance := ModelTenant{
 		UUID: libUuid.MustParse(validTenantID),
 	}
 
@@ -234,7 +234,7 @@ func TestDeleteTenant(t *testing.T) {
 	//	return
 	//}
 	//
-	//tenantInstance = Model{
+	//tenantInstance = ModelTenant{
 	//	UUID: libUuid.New(),
 	//}
 	//
