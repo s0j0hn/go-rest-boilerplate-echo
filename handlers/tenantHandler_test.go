@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	mockDBTenant              = tenantModel.Model{Name: ""}
+	mockDBTenant              = tenantModel.ModelTenant{Name: ""}
 	createTenantString        = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}`
 	allTenantsString          = `[{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME"}]`
 	updatedTenantString       = `{"id":"39b0b2fc-749f-46f3-8960-453418e72b2e","name":"NAME2"}`
@@ -80,7 +80,7 @@ func refreshTenantTable(t *testing.T) {
 		return
 	}
 
-	err = DbClient.AutoMigrate(&tenantModel.Model{})
+	err = DbClient.AutoMigrate(&tenantModel.ModelTenant{})
 	if err != nil {
 		t.Errorf("Error migrate tenants models: %v\n", err)
 		return
@@ -152,6 +152,8 @@ func TestGetTenant(t *testing.T) {
 	c.SetParamValues(validTenantID)
 	h := &HandlerTenant{mockDBTenant, TaskManager}
 
+	var fakeId = libUuid.New().String()
+
 	// Assertions
 	if assert.NoError(t, h.GetOneByID(c)) {
 		assert.Equal(t, http.StatusOK, rec.Code)
@@ -178,11 +180,13 @@ func TestGetTenant(t *testing.T) {
 	c = e.NewContext(req, rec)
 	c.SetPath("/tenants/:id")
 	c.SetParamNames("id")
-	c.SetParamValues(libUuid.New().String())
+	c.SetParamValues("ebf58861-dc8d-4828-a7e2-d1f463dd8a93")
 	h = &HandlerTenant{mockDBTenant, TaskManager}
 
 	// Assertions
 	if assert.NoError(t, h.GetOneByID(c)) {
+		ZeroLogger.Printf(fakeId)
+		ZeroLogger.Printf(rec.Body.String())
 		assert.Equal(t, http.StatusNotFound, rec.Code)
 		assert.Equal(t, "null\n", rec.Body.String())
 	}

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/casbin/casbin/v2"
 	"github.com/go-playground/validator/v10"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	golog "github.com/labstack/gommon/log"
@@ -45,7 +44,7 @@ type (
 // Validate is just a init
 func (cv *CustomValidator) Validate(i interface{}) error {
 	if err := cv.validator.Struct(i); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 	return nil
 }
@@ -102,8 +101,12 @@ func main() {
 
 	echoServer.Validator = &CustomValidator{validator: validator.New()}
 
+	// API cache
+	// s := souin_echo.New(souin_echo.DevDefaultConfiguration)
+
 	echoServer.Use(middleware.Recover())
 	echoServer.Use(middleware.Secure())
+	// echoServer.Use(s.Process)
 
 	// Database.
 	gormClient := database.Connect()
@@ -117,11 +120,11 @@ func main() {
 
 	createTenantPolicies(policyEnforcer)
 
-	zeroLoggger := log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	zeroLogger := log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	doneChannel := make(chan bool)
 	messagesChannel := make(chan []byte)
 	amqpContext := context.Background()
-	rabbitMQClient := rabbitmq.NewAMQPClient(config.GetAMQPQListenQueue(), config.GetAMQPPushQueue(), config.GetRabbitMQAccess(), zeroLoggger, doneChannel, messagesChannel, true)
+	rabbitMQClient := rabbitmq.NewAMQPClient(config.GetAMQPQListenQueue(), config.GetAMQPPushQueue(), config.GetRabbitMQAccess(), zeroLogger, doneChannel, messagesChannel, true)
 	doneChannel <- true
 	taskManager := rabbitmq.NewTaskManagerClient(rabbitMQClient)
 
@@ -135,7 +138,7 @@ func main() {
 		}
 	}()
 
-	tenantInstance := tenantModel.Model{}
+	tenantInstance := tenantModel.ModelTenant{}
 	tenantHandlerInstance := tenantHandler.CreateHandlerTenant(tenantInstance, taskManager)
 
 	policyCheck := PolicyEnforcer{enforcer: policyEnforcer}
@@ -193,13 +196,14 @@ func main() {
 			Handler: echoServer, // set Echo as handler
 			TLSConfig: &tls.Config{
 				//Certificates: nil, // <-- s.ListenAndServeTLS will populate this field
-				GetCertificate: autoTLSManager.GetCertificate,
-				NextProtos:     []string{acme.ALPNProto},
-				MinVersion:		tls.VersionTLS12,
+				GetCertificate:           autoTLSManager.GetCertificate,
+				NextProtos:               []string{acme.ALPNProto},
+				MinVersion:               tls.VersionTLS12,
 				CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
 				PreferServerCipherSuites: true,
 				CipherSuites: []uint16{
 					tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+					tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
 					tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
 					tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
 					tls.TLS_RSA_WITH_AES_256_CBC_SHA,
