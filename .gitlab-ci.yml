@@ -1,13 +1,15 @@
+# You can override the included template(s) by including variable overrides
+# See https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
+# Note that environment variables can be set in several places
+# See https://docs.gitlab.com/ee/ci/variables/#priority-of-environment-variables
 image: registry.gitlab.com/s0j0hn/go-rest-boilerplate-echo:latest
-
 cache:
   paths:
-    - /apt-cache
-    - /go/src/github.com
-    - /go/src/golang.org
-    - /go/src/google.golang.org
-    - /go/src/gopkg.in
-
+  - "/apt-cache"
+  - "/go/src/github.com"
+  - "/go/src/golang.org"
+  - "/go/src/google.golang.org"
+  - "/go/src/gopkg.in"
 stages:
   - build
   - test
@@ -43,13 +45,7 @@ unit_tests:
 code_coverage:
   stage: test
   script:
-    - make coverage
-
-#lint_code:
-#  stage: test
-#  script:
-#    - make lint
-
+  - make coverage
 build:
   stage: build
   except:
