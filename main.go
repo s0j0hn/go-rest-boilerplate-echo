@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"github.com/casbin/casbin/v2"
 	"github.com/go-playground/validator/v10"
@@ -22,8 +21,6 @@ import (
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/policy"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/rabbitmq"
 	"gitlab.com/s0j0hn/go-rest-boilerplate-echo/websocket"
-	"golang.org/x/crypto/acme"
-	"golang.org/x/crypto/acme/autocert"
 	"net/http"
 	"os"
 	"os/signal"
@@ -101,9 +98,6 @@ func main() {
 
 	echoServer.Validator = &CustomValidator{validator: validator.New()}
 
-	// API cache
-	// s := souin_echo.New(souin_echo.DevDefaultConfiguration)
-
 	echoServer.Use(middleware.Recover())
 	echoServer.Use(middleware.Secure())
 	// echoServer.Use(s.Process)
@@ -179,47 +173,11 @@ func main() {
 	echoServer.Use(middleware.RateLimiterWithConfig(rateLimiterConfig))
 
 	go websocket.CreateServer(messagesChannel)
-
-	if config.IsProd() {
-		autoTLSManager := autocert.Manager{
-			Prompt: autocert.AcceptTOS,
-			// Cache certificates to avoid issues with rate limits (https://letsencrypt.org/docs/rate-limits)
-			Cache: autocert.DirCache("./.cache"),
-			//HostPolicy: autocert.HostWhitelist("<DOMAIN>"),
+	go func(c *echo.Echo) {
+		if err := echoServer.Start(config.GetAddress()); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			echoServer.Logger.Fatal("shutting down the server")
 		}
-
-		echoServer.AutoTLSManager.Cache = autocert.DirCache("./.cache")
-		echoServer.Pre(middleware.HTTPSRedirect())
-
-		s := http.Server{
-			Addr:    ":443",
-			Handler: echoServer, // set Echo as handler
-			TLSConfig: &tls.Config{
-				//Certificates: nil, // <-- s.ListenAndServeTLS will populate this field
-				GetCertificate:   autoTLSManager.GetCertificate,
-				NextProtos:       []string{acme.ALPNProto},
-				MinVersion:       tls.VersionTLS13,
-				CurvePreferences: []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
-				CipherSuites: []uint16{
-					tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-					tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-					tls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-					tls.TLS_RSA_WITH_AES_256_GCM_SHA384,
-					tls.TLS_RSA_WITH_AES_256_CBC_SHA,
-				},
-			},
-			//ReadTimeout: 30 * time.Second, // use custom timeouts
-		}
-		if err := s.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
-			echoServer.Logger.Fatal(err)
-		}
-	} else {
-		go func(c *echo.Echo) {
-			if err := echoServer.Start(config.GetAddress()); err != nil && err != http.ErrServerClosed {
-				echoServer.Logger.Fatal("shutting down the server")
-			}
-		}(echoServer)
-	}
+	}(echoServer)
 
 	// Wait for interrupt signal to gracefully shut down the server with a timeout of 10 seconds.
 	// Use a buffered channel to avoid missing signals as recommended for signal.Notify
