@@ -1,57 +1,313 @@
-# You can override the included template(s) by including variable overrides
-# SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
-# Secret Detection customization: https://docs.gitlab.com/ee/user/application_security/secret_detection/#customizing-settings
-# Dependency Scanning customization: https://docs.gitlab.com/ee/user/application_security/dependency_scanning/#customizing-the-dependency-scanning-settings
-# Container Scanning customization: https://docs.gitlab.com/ee/user/application_security/container_scanning/#customizing-the-container-scanning-settings
-# Note that environment variables can be set in several places
-# See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
+# Use the latest GitLab CI features
+workflow:
+  name: Go REST API CI/CD Pipeline
+#  rules:
+#    - if: $CI_COMMIT_TAG
+#      variables:
+#        DEPLOY_ENVIRONMENT: production
+#    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+#      variables:
+#        DEPLOY_ENVIRONMENT: staging
+#    - if: $CI_COMMIT_BRANCH =~ /^up\/.*/
+#      variables:
+#        DEPLOY_ENVIRONMENT: development
+#    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+#      variables:
+#        DEPLOY_ENVIRONMENT: review
 
-# container_scanning:
-#   variables:
-#     DOCKER_IMAGE: ...
-#     DOCKER_USER: ...
-#     DOCKER_PASSWORD: ...
-image: registry.gitlab.com/s0j0hn/go-rest-boilerplate-echo:latest
-cache:
-  paths:
-  - "/apt-cache"
-  - "/go/src/github.com"
-  - "/go/src/golang.org"
-  - "/go/src/google.golang.org"
-  - "/go/src/gopkg.in"
+# Predefined variables for the entire pipeline
+variables:
+  DEPLOY_ENVIRONMENT: development
+  # Container image registry
+  CONTAINER_REGISTRY: $CI_REGISTRY/$CI_PROJECT_PATH
+  # Go variables
+  GO_VERSION: "1.24"
+  # Container scanning variables
+  CS_ANALYZER_IMAGE: "$CI_TEMPLATE_REGISTRY_HOST/security-products/container-scanning:6"
+  # Dependency scanning variables
+  DS_ANALYZER_IMAGE: "$CI_TEMPLATE_REGISTRY_HOST/security-products/dependency-scanning:5"
+  # SAST variables
+  SAST_ANALYZER_IMAGE: "$CI_TEMPLATE_REGISTRY_HOST/security-products/sast:4"
+  # Enable Kubernetes integration
+  KUBE_CONTEXT: "default"
+  SAST_EXPERIMENTAL_FEATURES: 'true'
+  COMPLIANCE_FRAMEWORK: "gdpr"
+  SCAN_RESULT_POLICIES_VULN: "vulnerability-scanning"
+  SCAN_RESULT_POLICIES_LICENSE: "license-scanning"
+
+# Use GitLab's latest CI/CD optimizations
+default:
+  image: golang:${GO_VERSION}-alpine
+  interruptible: true
+  # Use GitLab's new cache feature with exact key matching
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - .go-cache/
+      - vendor/
+    policy: pull-push
+  # Add standard tags to run on appropriate runners
+  tags:
+    - docker
+    - golang
+  before_script:
+    - export GOPATH=$CI_PROJECT_DIR/.go-cache
+    - export GOCACHE=$CI_PROJECT_DIR/.go-cache/go-build
+    - mkdir -p .go-cache
+    - go mod download
+    - go mod verify
+    - apk add --no-cache make build-base git
+
+# Define pipeline stages
 stages:
-- build
-- test
-- sast
-before_script:
-- mkdir -p /go/src/gitlab.com/s0j0hn /go/src/_/builds
-- cp -r $CI_PROJECT_DIR /go/src/gitlab.com/s0j0hn/go-rest-boilerplate-echo
-- ln -s /go/src/gitlab.com/s0j0hn /go/src/_/builds/s0j0hn
-- export CC=clang
+  - prepare
+  - test
+  - build
+  - security
+  - deploy
+  - post-deploy
+
+# ===== PREPARE STAGE =====
+prepare:
+  stage: prepare
+  image: alpine:latest
+  script:
+    - apk add --no-cache jq curl
+    - echo "Validating configuration files..."
+    - if [ -f config.yaml.example ]; then cat config.yaml.example | grep -v "password\|secret\|key" || true; fi
+    - echo "Generating build metadata..."
+    #- echo "{\"version\": \"$CI_COMMIT_REF_NAME\", \"build\": \"$CI_PIPELINE_ID\", \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > build_info.json
+  artifacts:
+    paths:
+      - build_info.json
+    expire_in: 1 week
+
+# ===== TEST STAGE =====
 unit_tests:
   stage: test
   except:
-  - tags
-  allow_failure: true
-  retry: 2
+    - tags
+  # Use GitLab's test report feature
   script:
-  - make dep
-  - make test
+    - go install gotest.tools/gotestsum@latest
+    - mkdir -p test-results
+    - gotestsum --junitfile test-results/unit-tests.xml --format testname -- -v -race -cover ./...
+    - go test -coverprofile=coverage.out ./...
+    - go tool cover -func=coverage.out
+  coverage: '/total:\s+\(statements\)\s+(\d+.\d+\%)/'
+  artifacts:
+    paths:
+      - coverage.out
+    reports:
+      junit: test-results/unit-tests.xml
+    expire_in: 1 week
+
 code_coverage:
   stage: test
+  needs:
+    - unit_tests
   script:
-  - make coverage
+    - go install github.com/axw/gocov/gocov@latest
+    - go install github.com/AlekSi/gocov-xml@latest
+    - go install github.com/boumenot/gocover-cobertura@latest
+    - mkdir -p coverage-reports
+    - gocov convert coverage.out | gocov-xml > coverage-reports/coverage.xml
+    - gocover-cobertura < coverage.out > coverage-reports/cobertura.xml
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage-reports/cobertura.xml
+    expire_in: 1 week
+
+api_integration_tests:
+  stage: test
+  image: golang:${GO_VERSION}
+  services:
+    - name: postgres:latest
+      alias: postgres
+    - name: rabbitmq:management
+      alias: rabbitmq
+  variables:
+    POSTGRES_PASSWORD: postgres
+    POSTGRES_USER: postgres
+    POSTGRES_DB: testdb
+    RABBITMQ_DEFAULT_USER: guest
+    RABBITMQ_DEFAULT_PASS: guest
+  script:
+    - cp config.yaml.example config.yaml
+    - sed -i 's/DBHOST/postgres/g' config.yaml
+    - sed -i 's/DBNAME/testdb/g' config.yaml
+    - sed -i 's/DBUSER/postgres/g' config.yaml
+    - sed -i 's/DBUSERPASSWORD/postgres/g' config.yaml
+    - sed -i 's/RABBITMQHOST/rabbitmq/g' config.yaml
+    - sed -i 's/RABBITMQUSER/guest/g' config.yaml
+    - sed -i 's/RABBITMQPASSWORD/guest/g' config.yaml
+    - go run ./database/migrate/migrate.go
+    - go test -tags=integration ./tests/integration -v
+
+# ===== BUILD STAGE =====
 build:
   stage: build
   except:
-  - tags
+    - tags
+  # Use GitLab's buildkit integration (available in 2025)
+  variables:
+    DOCKER_BUILDKIT: 1
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA
+    IMAGE_TAG_LATEST: $CI_REGISTRY_IMAGE:latest
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
-  - go get -u github.com/swaggo/swag/cmd/swag
-  - make dep
-  - make build
+    - >
+      docker build --cache-from $IMAGE_TAG_LATEST
+      --build-arg CI_COMMIT_SHA=$CI_COMMIT_SHA
+      --build-arg CI_COMMIT_REF_SLUG=$CI_COMMIT_REF_SLUG
+      --build-arg BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+      --tag $IMAGE_TAG .
+    - docker push $IMAGE_TAG
+    - |
+      if [ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]; then
+        docker tag $IMAGE_TAG $IMAGE_TAG_LATEST
+        docker push $IMAGE_TAG_LATEST
+      fi
+  # GitLab Container Registry integration
+  artifacts:
+    reports:
+      container_scanning: gl-container-scanning-report.json
+
+# ===== SECURITY STAGE =====
 include:
-- template: Security/SAST.gitlab-ci.yml
-- template: Security/Dependency-Scanning.gitlab-ci.yml
-- template: Jobs/Container-Scanning.gitlab-ci.yml
-variables:
-  SAST_EXPERIMENTAL_FEATURES: 'true'
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
+  - template: Jobs/Container-Scanning.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+  #- template: Security/API-Fuzzing.gitlab-ci.yml
+
+# Override security job settings
+sast:
+  stage: security
+  variables:
+    SAST_EXCLUDED_PATHS: "vendor, .go-cache, docs"
+    SCAN_KUBERNETES_MANIFESTS: "true"
+
+dependency_scanning:
+  stage: security
+  variables:
+    DS_EXCLUDED_PATHS: "vendor, .go-cache"
+
+container_scanning:
+  stage: security
+  variables:
+    CS_IMAGE: $IMAGE_TAG
+    CS_DOCKERFILE_PATH: "Dockerfile"
+
+secret_detection:
+  stage: security
+  variables:
+    SECRET_DETECTION_EXCLUDED_PATHS: "vendor, .go-cache"
+
+# ===== DEPLOY STAGE =====
+.deploy_template: &deploy_template
+  stage: deploy
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: [""]
+  before_script:
+    - kubectl config use-context $KUBE_CONTEXT
+  script:
+    - |
+      echo "Deploying to $DEPLOY_ENVIRONMENT"
+      sed -i "s/{{IMAGE_TAG}}/$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA/g" deploy/kubernetes/$DEPLOY_ENVIRONMENT/*.yaml
+      kubectl apply -f deploy/kubernetes/$DEPLOY_ENVIRONMENT/
+      kubectl rollout status deployment/$CI_PROJECT_NAME -n $DEPLOY_ENVIRONMENT
+  environment:
+    name: $DEPLOY_ENVIRONMENT
+    url: https://$DEPLOY_ENVIRONMENT-api.example.com
+
+deploy_development:
+  <<: *deploy_template
+  only:
+    - /^feature\/.*/
+  variables:
+    DEPLOY_ENVIRONMENT: development
+  when: manual
+
+deploy_staging:
+  <<: *deploy_template
+  only:
+    - main
+  variables:
+    DEPLOY_ENVIRONMENT: staging
+
+deploy_production:
+  <<: *deploy_template
+  only:
+    - tags
+  variables:
+    DEPLOY_ENVIRONMENT: production
+  when: manual
+  environment:
+    name: production
+    url: https://api.example.com
+
+# ===== POST-DEPLOY STAGE =====
+health_check:
+  stage: post-deploy
+  image: curlimages/curl:latest
+  variables:
+    HEALTH_CHECK_URL: https://$DEPLOY_ENVIRONMENT-api.example.com/health
+  script:
+    - |
+      if curl -sSf "$HEALTH_CHECK_URL" > /dev/null; then
+        echo "Health check passed successfully!"
+      else
+        echo "Health check failed!"
+        exit 1
+      fi
+  only:
+    - main
+    - tags
+  needs:
+    - job: deploy_staging
+      optional: true
+    - job: deploy_production
+      optional: true
+
+performance_monitoring:
+  stage: post-deploy
+  image: python:3.12-alpine
+  script:
+    - pip install locust
+    - locust -f tests/performance/locustfile.py --headless -u 20 -r 2 -t 1m --host https://$DEPLOY_ENVIRONMENT-api.example.com
+  artifacts:
+    reports:
+      performance: performance-report.json
+  only:
+    - main
+    - tags
+  when: manual
+  needs:
+    - job: deploy_staging
+      optional: true
+    - job: deploy_production
+      optional: true
+
+# Add release process automation
+release:
+  stage: post-deploy
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  script:
+    - |
+      if [[ "$CI_COMMIT_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        release-cli create --name "Release $CI_COMMIT_TAG" \
+          --description "$(cat CHANGELOG.md | sed -n "/^## $CI_COMMIT_TAG/,/^## /p" | sed '$d')" \
+          --tag-name "$CI_COMMIT_TAG" \
+          --ref "$CI_COMMIT_TAG" \
+          --assets-link "{\"name\":\"${CI_PROJECT_NAME}-${CI_COMMIT_TAG}.tar.gz\",\"url\":\"${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${CI_PROJECT_NAME}/${CI_COMMIT_TAG}/${CI_PROJECT_NAME}-${CI_COMMIT_TAG}.tar.gz\"}"
+      fi
+  only:
+    - tags
