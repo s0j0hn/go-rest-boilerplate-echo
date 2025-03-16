@@ -2,7 +2,7 @@ version: '3.5'
 
 services:
   rabbitmq:
-    image: 'rabbitmq:3.8-management-alpine'
+    image: 'rabbitmq:3.10-alpine'
     hostname: rabbitmq
     ports:
       # The standard AMQP protocol port
@@ -20,7 +20,7 @@ services:
     networks:
       - boilerplate-local
   postgres:
-    image: 'postgres:13-alpine3.14'
+    image: 'postgres:16-alpine3.21'
     hostname: postgres
     environment:
       POSTGRES_USER: boilerplate
