@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/spf13/viper"
+	"strings"
 )
 
 func getViper() *viper.Viper {
@@ -21,6 +22,13 @@ func getViper() *viper.Viper {
 // IsProd to get the env for prod or not.
 func IsProd() bool {
 	return getViper().Get("app") == "prod"
+}
+
+// GetPort is used to get the webserver port to listen on.
+func GetPort() string {
+	address := getViper().Get("address").(string)
+
+	return strings.Split(address, ":")[1]
 }
 
 // GetAddress is used to get the webserver host to listen on.
