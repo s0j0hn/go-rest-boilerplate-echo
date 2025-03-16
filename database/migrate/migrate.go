@@ -6,11 +6,11 @@ import (
 )
 
 // RunMigrateDatabase is used to prepare for the database
-func RunMigrateDatabase() {
+func RunMigrateDatabase() error {
 	databaseClient := database.Connect()
 	err := databaseClient.AutoMigrate(&tenantModel.ModelTenant{})
 	if err != nil {
-		panic(err)
+		return err
 	}
-
+	return nil
 }

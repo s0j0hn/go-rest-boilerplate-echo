@@ -408,7 +408,7 @@ func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
 	default:
 		err = msg.Reject(false)
 		if err != nil {
-			logAndNack(msg, l, startTime, err.Error())
+			logAndNack(msg, l, startTime, "%s", err.Error())
 			return
 		}
 		return
@@ -418,7 +418,7 @@ func (c *AMQPClient) parseEvent(msg amqp.Delivery) {
 
 	err = msg.Ack(false)
 	if err != nil {
-		logAndNack(msg, l, startTime, err.Error())
+		logAndNack(msg, l, startTime, "%s", err.Error())
 		return
 	}
 }
@@ -427,7 +427,6 @@ func logAndNack(msg amqp.Delivery, l *zerolog.Event, t time.Time, errorMessage s
 	err := msg.Nack(false, false)
 	if err != nil {
 		panic(err)
-		return
 	}
 	l.Int64("took-ms", time.Since(t).Milliseconds()).Str("level", "error").Msg(fmt.Sprintf(errorMessage, args...))
 }
