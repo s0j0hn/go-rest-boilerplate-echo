@@ -2,77 +2,187 @@ package config
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"strings"
+	"time"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/spf13/viper"
 )
 
-func getViper() *viper.Viper {
+// Config holds all application configuration
+type Config struct {
+	App       AppConfig      `yaml:"app" validate:"required"`
+	Server    ServerConfig   `yaml:"server" validate:"required"`
+	Database  DatabaseConfig `yaml:"database" validate:"required"`
+	RabbitMQ  RabbitMQConfig `yaml:"rabbitmq" validate:"required"`
+	WebSocket WebSocketConfig `yaml:"websocket"`
+}
+
+// AppConfig holds application-level configuration
+type AppConfig struct {
+	Environment string `yaml:"environment" validate:"required,oneof=development staging production"`
+	LogLevel    string `yaml:"log_level" validate:"required,oneof=debug info warn error"`
+}
+
+// ServerConfig holds HTTP server configuration
+type ServerConfig struct {
+	Address      string        `yaml:"address" validate:"required"`
+	Port         int           `yaml:"port" validate:"required,min=1024,max=65535"`
+	ReadTimeout  time.Duration `yaml:"read_timeout" validate:"required"`
+	WriteTimeout time.Duration `yaml:"write_timeout" validate:"required"`
+	IdleTimeout  time.Duration `yaml:"idle_timeout" validate:"required"`
+}
+
+// DatabaseConfig holds database configuration
+type DatabaseConfig struct {
+	Host     string `yaml:"host" validate:"required"`
+	Port     int    `yaml:"port" validate:"required,min=1,max=65535"`
+	User     string `yaml:"user" validate:"required"`
+	Password string `yaml:"password" validate:"required"`
+	Name     string `yaml:"name" validate:"required"`
+	SSLMode  string `yaml:"ssl_mode" validate:"required,oneof=disable require"`
+}
+
+// RabbitMQConfig holds RabbitMQ configuration
+type RabbitMQConfig struct {
+	Host        string `yaml:"host" validate:"required"`
+	Port        int    `yaml:"port" validate:"required,min=1,max=65535"`
+	User        string `yaml:"user" validate:"required"`
+	Password    string `yaml:"password" validate:"required"`
+	PushQueue   string `yaml:"push_queue" validate:"required"`
+	ListenQueue string `yaml:"listen_queue" validate:"required"`
+}
+
+// WebSocketConfig holds WebSocket configuration
+type WebSocketConfig struct {
+	Address string `yaml:"address"`
+}
+
+var globalConfig *Config
+
+// Load loads and validates the configuration from config.yaml
+func Load() (*Config, error) {
+	if globalConfig != nil {
+		return globalConfig, nil
+	}
+
 	vp := viper.New()
 	vp.SetConfigName("config")
 	vp.SetConfigType("yaml")
 	vp.AddConfigPath(".")
-	err := vp.ReadInConfig()
+	vp.AddConfigPath("./config")
 
-	if err != nil {
-		panic(fmt.Errorf("error: %s", err))
+	// Set defaults
+	vp.SetDefault("app.environment", "development")
+	vp.SetDefault("app.log_level", "info")
+	vp.SetDefault("server.read_timeout", "30s")
+	vp.SetDefault("server.write_timeout", "30s")
+	vp.SetDefault("server.idle_timeout", "120s")
+	vp.SetDefault("database.port", 5432)
+	vp.SetDefault("database.ssl_mode", "disable")
+	vp.SetDefault("rabbitmq.port", 5672)
+
+	if err := vp.ReadInConfig(); err != nil {
+		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
-	return vp
+
+	var cfg Config
+	if err := vp.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	}
+
+	// Validate configuration
+	validate := validator.New()
+	if err := validate.Struct(&cfg); err != nil {
+		return nil, fmt.Errorf("config validation failed: %w", err)
+	}
+
+	globalConfig = &cfg
+	return globalConfig, nil
 }
 
-// IsProd to get the env for prod or not.
+// Get returns the global configuration
+func Get() *Config {
+	if globalConfig == nil {
+		panic("configuration not loaded, call Load() first")
+	}
+	return globalConfig
+}
+
+// IsProd returns true if running in production environment
+func (c *Config) IsProd() bool {
+	return c.App.Environment == "production"
+}
+
+// GetAddress returns the full server address
+func (c *Config) GetAddress() string {
+	if c.Server.Address != "" {
+		return c.Server.Address
+	}
+	return fmt.Sprintf(":%d", c.Server.Port)
+}
+
+// GetPort returns the server port as string
+func (c *Config) GetPort() string {
+	if c.Server.Address != "" && strings.Contains(c.Server.Address, ":") {
+		return strings.Split(c.Server.Address, ":")[1]
+	}
+	return fmt.Sprintf("%d", c.Server.Port)
+}
+
+// GetDatabaseDSN returns the PostgreSQL connection string
+func (c *Config) GetDatabaseDSN() string {
+	return fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		c.Database.Host,
+		c.Database.Port,
+		c.Database.User,
+		c.Database.Password,
+		c.Database.Name,
+		c.Database.SSLMode,
+	)
+}
+
+// GetRabbitMQDSN returns the RabbitMQ connection string
+func (c *Config) GetRabbitMQDSN() string {
+	return fmt.Sprintf(
+		"amqp://%s:%s@%s:%d/",
+		c.RabbitMQ.User,
+		c.RabbitMQ.Password,
+		c.RabbitMQ.Host,
+		c.RabbitMQ.Port,
+	)
+}
+
+// Backward compatibility functions (deprecated)
 func IsProd() bool {
-	return getViper().Get("app") == "prod"
+	return Get().IsProd()
 }
 
-// GetPort is used to get the webserver port to listen on.
 func GetPort() string {
-	address := getViper().Get("address").(string)
-
-	return strings.Split(address, ":")[1]
+	return Get().GetPort()
 }
 
-// GetAddress is used to get the webserver host to listen on.
 func GetAddress() string {
-	return getViper().Get("address").(string)
+	return Get().GetAddress()
 }
 
-// GetWebSocketAddress is used to get the webserver host to listen on.
 func GetWebSocketAddress() string {
-	return getViper().Get("websocket").(string)
+	return Get().WebSocket.Address
 }
 
-// GetDatabaseAccess is used to get the database credentials.
 func GetDatabaseAccess() string {
-	v := getViper()
-	connection := fmt.Sprintf(
-		"host=%s port=5432 user=%s password=%s dbname=%s sslmode=disable",
-		v.Get("database.host"),
-		v.Get("database.user"),
-		v.Get("database.password"),
-		v.Get("database.name"),
-	)
-	return connection
+	return Get().GetDatabaseDSN()
 }
 
-// GetRabbitMQAccess is used to get the rabbitmq credentials.
 func GetRabbitMQAccess() string {
-	v := getViper()
-	connection := fmt.Sprintf("amqp://%s:%s@%s/",
-		v.Get("rabbitmq.user"),
-		v.Get("rabbitmq.password"),
-		v.Get("rabbitmq.host"),
-	)
-	return connection
+	return Get().GetRabbitMQDSN()
 }
 
-// GetAMQPPushQueue is used to get the env value for queue to push events.
 func GetAMQPPushQueue() string {
-	v := getViper()
-	return fmt.Sprintf("%s", v.Get("rabbitmq.pushqueue"))
+	return Get().RabbitMQ.PushQueue
 }
 
-// GetAMQPQListenQueue is used to get the env value for queue to listen to events.
 func GetAMQPQListenQueue() string {
-	v := getViper()
-	return fmt.Sprintf("%s", v.Get("rabbitmq.listenqueue"))
+	return Get().RabbitMQ.ListenQueue
 }

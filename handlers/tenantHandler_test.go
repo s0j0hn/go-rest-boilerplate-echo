@@ -18,6 +18,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -42,6 +43,7 @@ type (
 var DbClient *gorm.DB
 var TaskManager *rabbitmq.TaskClient = nil
 var ZeroLogger zerolog.Logger
+var testMutex sync.Mutex  // Protect concurrent test database access
 
 func (cv *CustomValidator) Validate(i interface{}) error {
 	if err := cv.validator.Struct(i); err != nil {
@@ -73,20 +75,21 @@ func TestMain(m *testing.M) {
 }
 
 func refreshTenantTable(t *testing.T) {
-	ZeroLogger.Printf("Reset table")
-	err := DbClient.Exec("DROP TABLE IF EXISTS tenant").Error
-	if err != nil {
-		t.Errorf("Error drop tenants models: %v\n", err)
-		return
-	}
+	testMutex.Lock()
+	defer testMutex.Unlock()
 
-	err = DbClient.AutoMigrate(&tenantModel.ModelTenant{})
+	ZeroLogger.Printf("Reset table")
+	// Instead of dropping table, just delete all records to avoid table locks
+	err := DbClient.Exec("DELETE FROM tenant").Error
 	if err != nil {
-		t.Errorf("Error migrate tenants models: %v\n", err)
-		return
+		// If table doesn't exist, create it
+		err = DbClient.AutoMigrate(&tenantModel.ModelTenant{})
+		if err != nil {
+			t.Errorf("Error migrate tenants models: %v\n", err)
+			return
+		}
 	}
 	ZeroLogger.Printf("Reset done")
-
 }
 
 func TestCreateTenant(t *testing.T) {
@@ -185,8 +188,8 @@ func TestGetTenant(t *testing.T) {
 
 	// Assertions
 	if assert.NoError(t, h.GetOneByID(c)) {
-		ZeroLogger.Printf(fakeId)
-		ZeroLogger.Printf(rec.Body.String())
+		ZeroLogger.Printf("%s", fakeId)
+		ZeroLogger.Printf("%s", rec.Body.String())
 		assert.Equal(t, http.StatusNotFound, rec.Code)
 		assert.Equal(t, "null\n", rec.Body.String())
 	}

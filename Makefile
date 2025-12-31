@@ -1,5 +1,5 @@
 #! /usr/bin/make
-PROJECT_NAME := "boilerplate"
+PROJECT_NAME := "go-rest-boilerplate-echo"
 PKG := "gitlab.com/s0j0hn/$(PROJECT_NAME)"
 PKG_LIST := $(shell go list ${PKG}/... | grep -v /vendor/)
 GO_FILES := $(shell find . -name '*.go' | grep -v /vendor/ | grep -v _test.go)
@@ -14,12 +14,12 @@ dep:
 
 build:
 	@echo COMPILING...
-	@go build -o dist/server
+	@go build -o dist/server ./cmd/server
 	@echo DONE
 
 swagger:
 	@echo GENERATING SWAGGER...
-	@swag init
+	@swag init -g ./cmd/server/main.go
 	@echo DONE
 
 start-services:
